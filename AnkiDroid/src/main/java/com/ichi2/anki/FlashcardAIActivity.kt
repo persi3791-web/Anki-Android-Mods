@@ -129,7 +129,7 @@ class FlashcardAIActivity : AppCompatActivity() {
     private fun callGPT4(prompt: String): String {
         val token = readAssetToken("github_token.txt"); if (token.isEmpty()) return ""
         try {
-            val bodyObj = org.json.JSONObject(); bodyObj.put("model", "gpt-4o"); bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt))); bodyObj.put("max_tokens", 1000)
+            val bodyObj = org.json.JSONObject(); bodyObj.put("model", "gpt-4o"); bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt))); bodyObj.put("max_tokens", 1000); bodyObj.put("stream", false)
             val res = client.newCall(Request.Builder().url("https://models.inference.ai.azure.com/chat/completions").addHeader("Authorization","Bearer $token").addHeader("Content-Type","application/json").post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull())).build()).execute()
             if (res.isSuccessful) return org.json.JSONObject(res.body.string()).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim()
         } catch (e: Exception) { }
