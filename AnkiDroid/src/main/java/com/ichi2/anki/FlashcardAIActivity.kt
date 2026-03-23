@@ -127,12 +127,12 @@ class FlashcardAIActivity : AppCompatActivity() {
     private fun callAI(prompt: String): String = if (useGPT4) callGPT4(prompt) else callGemini(prompt)
 
     private fun callGPT4(prompt: String): String {
-        val token = readAssetToken("github_token.txt"); if (token.isEmpty()) return ""
+        val token = readAssetToken("github_token.txt"); if (token.isEmpty()) return "DBG:TOKEN_VACIO"; android.util.Log.d("GPT4","TOKEN="+token.take(10))
         try {
             val bodyObj = org.json.JSONObject(); bodyObj.put("model", "gpt-4o"); bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt))); bodyObj.put("max_tokens", 1000); bodyObj.put("stream", false)
             val res = client.newCall(Request.Builder().url("https://models.inference.ai.azure.com/chat/completions").addHeader("Authorization","Bearer $token").addHeader("Content-Type","application/json").post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull())).build()).execute()
-            if (res.isSuccessful) return org.json.JSONObject(res.body.string()).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim()
-        } catch (e: Exception) { android.util.Log.e("GPT4", "Error: ${e.message}"); return "DBG:${e.message}" }
+            val body = res.body.string(); if (res.isSuccessful) return org.json.JSONObject(body).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim() else return "DBG:HTTP${res.code}:$body"
+        } catch (e: Exception) { return "DBG:CATCH:${e.message}" }
         return ""
     }
 
