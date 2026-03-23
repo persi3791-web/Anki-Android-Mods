@@ -143,7 +143,7 @@ class FlashcardAIActivity : AppCompatActivity() {
         }
         adapter = RowsAdapter(currentData)
         recycler.adapter = adapter
-        root.addView(recycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        root.addView(recycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 600))
 
         btnGenImages = Button(this).apply {
             text = "2. GENERAR 3a COLUMNA"
@@ -179,9 +179,7 @@ class FlashcardAIActivity : AppCompatActivity() {
         }
         root.addView(tvLog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
 
-        val scrollRoot = android.widget.ScrollView(this)
-        scrollRoot.addView(root)
-        setContentView(scrollRoot)
+        setContentView(root)
 
         checkPermissions()
 
