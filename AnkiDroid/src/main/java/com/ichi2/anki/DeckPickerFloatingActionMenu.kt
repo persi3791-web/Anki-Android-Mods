@@ -67,6 +67,7 @@ class DeckPickerFloatingActionMenu(
         isFABOpen = true
         if (deckPicker.animationEnabled()) {
             // Show with animation
+            binding.addAiLayout.visibility = View.VISIBLE
             binding.addSharedLayout.visibility = View.VISIBLE
             binding.addDeckLayout.visibility = View.VISIBLE
             binding.addFilteredDeckLayout.visibility = View.VISIBLE
@@ -100,6 +101,8 @@ class DeckPickerFloatingActionMenu(
             }
 
             with(binding) {
+                addAiLayout.animate().translationY(0f).duration = 60
+                addAiLayout.animate().alpha(1f).duration = 60
                 addNoteLabel.animate().translationX(0f).duration = 70
                 addSharedLayout.animate().translationY(0f).duration = 100
                 addDeckLayout.animate().translationY(0f).duration = 70
@@ -111,11 +114,13 @@ class DeckPickerFloatingActionMenu(
             }
         } else {
             // Show without animation
+            binding.addAiLayout.visibility = View.VISIBLE
             binding.addSharedLayout.visibility = View.VISIBLE
             binding.addDeckLayout.visibility = View.VISIBLE
             binding.addFilteredDeckLayout.visibility = View.VISIBLE
             binding.fabBGLayout.visibility = View.VISIBLE
             binding.addNoteLabel.visibility = View.VISIBLE
+            binding.addAiLayout.alpha = 1f
             binding.addSharedLayout.alpha = 1f
             binding.addDeckLayout.alpha = 1f
             binding.addFilteredDeckLayout.alpha = 1f
@@ -190,6 +195,7 @@ class DeckPickerFloatingActionMenu(
 
                                 override fun onAnimationEnd(animator: Animator) {
                                     if (!isFABOpen) {
+                                        addAiLayout.visibility = View.GONE
                                         addSharedLayout.visibility = View.GONE
                                         addDeckLayout.visibility = View.GONE
                                         addFilteredDeckLayout.visibility = View.GONE
@@ -269,6 +275,7 @@ class DeckPickerFloatingActionMenu(
 
                                 override fun onAnimationEnd(animator: Animator) {
                                     if (!isFABOpen) {
+                                        addAiLayout.visibility = View.GONE
                                         addSharedLayout.visibility = View.GONE
                                         addDeckLayout.visibility = View.GONE
                                         addFilteredDeckLayout.visibility = View.GONE
@@ -390,6 +397,12 @@ class DeckPickerFloatingActionMenu(
         }
 
         binding.fabBGLayout.setOnClickListener { closeFloatingActionMenu(applyRiseAndShrinkAnimation = true) }
+
+        val addAiListener = View.OnClickListener {
+            if (isFABOpen) openFlashcardAI()
+        }
+        binding.addAiButton.setOnClickListener(addAiListener)
+        binding.addAiLabel.setOnClickListener(addAiListener)
         val addDeckListener =
             View.OnClickListener {
                 if (isFABOpen) {
@@ -470,6 +483,12 @@ class DeckPickerFloatingActionMenu(
                 }
             },
         )
+    }
+
+    private fun openFlashcardAI() {
+        closeFloatingActionMenu(applyRiseAndShrinkAnimation = false)
+        val intent = android.content.Intent(context, FlashcardAIActivity::class.java)
+        deckPicker.startActivity(intent)
     }
 
     /**

@@ -718,6 +718,12 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/filepaths" />
         </provider>
-    </application>
+    
+        <activity
+            android:name=".FlashcardAIActivity"
+            android:label="Crear con IA"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+            android:exported="false" />
+</application>
 
 </manifest>
