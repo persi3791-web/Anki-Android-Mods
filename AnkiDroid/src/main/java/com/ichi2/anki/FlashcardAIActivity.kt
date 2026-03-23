@@ -132,7 +132,7 @@ class FlashcardAIActivity : AppCompatActivity() {
             val bodyObj = org.json.JSONObject(); bodyObj.put("model", "gpt-4o"); bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt))); bodyObj.put("max_tokens", 1000); bodyObj.put("stream", false)
             val res = client.newCall(Request.Builder().url("https://models.inference.ai.azure.com/chat/completions").addHeader("Authorization","Bearer $token").addHeader("Content-Type","application/json").post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull())).build()).execute()
             if (res.isSuccessful) return org.json.JSONObject(res.body.string()).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim()
-        } catch (e: Exception) { return "ERR:${e.message}" }
+        } catch (e: Exception) { android.util.Log.e("GPT4", "Error: ${e.message}"); return "DBG:${e.message}" }
         return ""
     }
 
@@ -164,7 +164,7 @@ class FlashcardAIActivity : AppCompatActivity() {
                 val newRows = mutableListOf<FlashcardRow>()
                 resultText.lines().forEach { line -> if (line.contains(";")) { val p = line.split(";"); if (p.size >= 2) newRows.add(FlashcardRow(p[0].trim(), p[1].trim())) } }
                 withContext(Dispatchers.Main) { currentData.clear(); currentData.addAll(newRows); adapter.notifyDataSetChanged(); log("Exito! ${newRows.size} filas."); progressBar.progress = 100 }
-            } else { withContext(Dispatchers.Main) { log("Error: IA no respondio.") } }
+            } else { withContext(Dispatchers.Main) { log("Error: IA respondio vacio o: $resultText") } }
         }
     }
 
