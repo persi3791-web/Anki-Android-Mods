@@ -78,7 +78,7 @@ class FlashcardAIActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(BG_DARK); setPadding(16,16,16,32) }
         etInput = EditText(this).apply { hint = "Tema o pega tabla con | separadores"; minLines = 3; maxLines = 6; setTextColor(TEXT_WHITE); setHintTextColor(TEXT_HINT); background = inputBg(); setPadding(12,12,12,12) }
         val etInputParams = mpWrap()
-        etInputParams.topMargin = (8 * resources.displayMetrics.density).toInt()
+        etInputParams.topMargin = (150 * resources.displayMetrics.density).toInt()
         root.addView(etInput, etInputParams); root.addView(space(8))
         val rowCount = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val countLabel = TextView(this).apply { text = "Cant: "; setPadding(0,14,8,0); setTextColor(TEXT_WHITE) }
