@@ -232,7 +232,7 @@ class FlashcardAIActivity : AppCompatActivity() {
                 .post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull()))
                 .build()).execute()
             if (res.isSuccessful) {
-                val json = org.json.JSONObject(res.body?.string() ?: "{}")
+                val json = org.json.JSONObject(res.body.string() ?: "{}")
                 return json.getJSONArray("choices").getJSONObject(0)
                     .getJSONObject("message").getString("content").trim()
             }
@@ -252,7 +252,7 @@ class FlashcardAIActivity : AppCompatActivity() {
                     .post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull()))
                     .build()).execute()
                 if (res.isSuccessful) {
-                    val json = org.json.JSONObject(res.body?.string() ?: "{}")
+                    val json = org.json.JSONObject(res.body.string() ?: "{}")
                     return json.getJSONArray("candidates").getJSONObject(0)
                         .getJSONObject("content").getJSONArray("parts").getJSONObject(0)
                         .getString("text").trim()
@@ -344,7 +344,7 @@ class FlashcardAIActivity : AppCompatActivity() {
             val url = "https://www.googleapis.com/customsearch/v1?key=$GOOGLE_API_KEY&cx=$GOOGLE_CX&q=$query&searchType=image&num=3"
             val response = client.newCall(Request.Builder().url(url).build()).execute()
             if (response.isSuccessful) {
-                val json = org.json.JSONObject(response.body?.string() ?: "{}")
+                val json = org.json.JSONObject(response.body.string() ?: "{}")
                 val items = json.optJSONArray("items")
                 if (items != null && items.length() > 0) items.getJSONObject(Random.nextInt(minOf(items.length(), 3))).getString("link") else ""
             } else ""
@@ -356,7 +356,7 @@ class FlashcardAIActivity : AppCompatActivity() {
             val formBody = MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("file", remoteUrl).addFormDataPart("upload_preset", CLOUDINARY_UPLOAD_PRESET).build()
             val response = client.newCall(Request.Builder().url(CLOUDINARY_URL).post(formBody).build()).execute()
-            if (response.isSuccessful) org.json.JSONObject(response.body?.string() ?: "{}").getString("secure_url") else remoteUrl
+            if (response.isSuccessful) org.json.JSONObject(response.body.string() ?: "{}").getString("secure_url") else remoteUrl
         } catch (e: Exception) { remoteUrl }
     }
 
