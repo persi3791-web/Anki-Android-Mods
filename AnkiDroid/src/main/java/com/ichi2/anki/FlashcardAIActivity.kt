@@ -20,7 +20,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -232,10 +231,11 @@ class FlashcardAIActivity : AppCompatActivity() {
                 .addHeader("Content-Type", "application/json")
                 .post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull()))
                 .build()).execute()
-            if (res.isSuccessful)
-                return JsonParser.parseString(res.body?.string()).asJsonObject
-                    .getAsJsonArray("choices")[0].asJsonObject
-                    .getAsJsonObject("message").get("content").asString.trim()
+            if (res.isSuccessful) {
+                val json = org.json.JSONObject(res.body?.string() ?: "{}")
+                return json.getJSONArray("choices").getJSONObject(0)
+                    .getJSONObject("message").getString("content").trim()
+            }
         } catch (e: Exception) { }
         return ""
     }
@@ -251,11 +251,12 @@ class FlashcardAIActivity : AppCompatActivity() {
                     .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$key")
                     .post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull()))
                     .build()).execute()
-                if (res.isSuccessful)
-                    return JsonParser.parseString(res.body?.string()).asJsonObject
-                        .getAsJsonArray("candidates")[0].asJsonObject
-                        .getAsJsonObject("content").getAsJsonArray("parts")[0].asJsonObject
-                        .get("text").asString.trim()
+                if (res.isSuccessful) {
+                    val json = org.json.JSONObject(res.body?.string() ?: "{}")
+                    return json.getJSONArray("candidates").getJSONObject(0)
+                        .getJSONObject("content").getJSONArray("parts").getJSONObject(0)
+                        .getString("text").trim()
+                }
             } catch (e: Exception) { continue }
         }
         return ""
@@ -343,8 +344,9 @@ class FlashcardAIActivity : AppCompatActivity() {
             val url = "https://www.googleapis.com/customsearch/v1?key=$GOOGLE_API_KEY&cx=$GOOGLE_CX&q=$query&searchType=image&num=3"
             val response = client.newCall(Request.Builder().url(url).build()).execute()
             if (response.isSuccessful) {
-                val items = JsonParser.parseString(response.body?.string()).asJsonObject.getAsJsonArray("items")
-                if (items != null && items.size() > 0) items.get(Random.nextInt(minOf(items.size(), 3))).asJsonObject.get("link").asString else ""
+                val json = org.json.JSONObject(response.body?.string() ?: "{}")
+                val items = json.optJSONArray("items")
+                if (items != null && items.length() > 0) items.getJSONObject(Random.nextInt(minOf(items.length(), 3))).getString("link") else ""
             } else ""
         } catch (e: Exception) { "" }
     }
@@ -354,7 +356,7 @@ class FlashcardAIActivity : AppCompatActivity() {
             val formBody = MultipartBody.Builder().setType(MultipartBody.FORM)
                 .addFormDataPart("file", remoteUrl).addFormDataPart("upload_preset", CLOUDINARY_UPLOAD_PRESET).build()
             val response = client.newCall(Request.Builder().url(CLOUDINARY_URL).post(formBody).build()).execute()
-            if (response.isSuccessful) JsonParser.parseString(response.body?.string()).asJsonObject.get("secure_url").asString else remoteUrl
+            if (response.isSuccessful) org.json.JSONObject(response.body?.string() ?: "{}").getString("secure_url") else remoteUrl
         } catch (e: Exception) { remoteUrl }
     }
 
