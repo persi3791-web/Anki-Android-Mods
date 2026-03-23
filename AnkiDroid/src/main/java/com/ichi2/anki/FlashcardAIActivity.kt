@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -57,6 +56,7 @@ class FlashcardAIActivity : AppCompatActivity() {
     private lateinit var headerA: TextView
     private lateinit var etInput: EditText
     private lateinit var etCount: EditText
+    private lateinit var btnModel: Button
 
     private val prefs by lazy { getSharedPreferences("flashcard_ai_prefs", MODE_PRIVATE) }
 
@@ -68,21 +68,17 @@ class FlashcardAIActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         try {
-            initUI()
+            buildUI()
         } catch (e: Exception) {
-            setContentView(android.widget.TextView(this).apply {
-                text = "ERROR: ${e.javaClass.simpleName}
-${e.message}
-${e.stackTrace.take(5).joinToString("
-")}"
-                setPadding(20, 20, 20, 20)
-                setTextColor(android.graphics.Color.RED)
-            })
+            val tv = TextView(this)
+            tv.text = "ERROR: ${e.javaClass.simpleName} - ${e.message}"
+            tv.setTextColor(Color.RED)
+            tv.setPadding(20, 20, 20, 20)
+            setContentView(tv)
         }
     }
 
-    private fun initUI() {
-        // Crear layout programáticamente
+    private fun buildUI() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
@@ -93,108 +89,63 @@ ${e.stackTrace.take(5).joinToString("
             setBackgroundColor(Color.parseColor("#1A6B3A"))
             setTitleTextColor(Color.WHITE)
         }
-        root.addView(toolbar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        root.addView(toolbar, lp(match = true, wrap = false, height = 150))
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        etInput = EditText(this).apply {
-            hint = "Tema o pega tabla con | separadores"
-            minLines = 3; maxLines = 6
-        }
-        root.addView(etInput, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        etInput = EditText(this).apply { hint = "Tema o pega tabla con | separadores"; minLines = 3; maxLines = 6 }
+        root.addView(etInput, lp(match = true))
 
         val rowCount = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val countLabel = TextView(this).apply { text = "Cant: "; setPadding(0,0,8,0) }
+        val countLabel = TextView(this).apply { text = "Cant: "; setPadding(0, 8, 8, 0) }
         etCount = EditText(this).apply { setText("10"); inputType = android.text.InputType.TYPE_CLASS_NUMBER }
-        rowCount.addView(countLabel)
-        rowCount.addView(etCount, LinearLayout.LayoutParams(120, LinearLayout.LayoutParams.WRAP_CONTENT))
-
         val btnAI = Button(this).apply {
             text = "CREAR CON IA"
             setBackgroundColor(Color.parseColor("#E67E22"))
             setTextColor(Color.WHITE)
         }
-        rowCount.addView(btnAI, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-        root.addView(rowCount)
+        rowCount.addView(countLabel)
+        rowCount.addView(etCount, LinearLayout.LayoutParams(150, LinearLayout.LayoutParams.WRAP_CONTENT))
+        rowCount.addView(btnAI, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        root.addView(rowCount, lp(match = true))
 
-        val btnUpload = Button(this).apply {
-            text = "1. SUBIR TABLA"
-            setBackgroundColor(Color.parseColor("#2980B9"))
-            setTextColor(Color.WHITE)
-        }
-        val btnClear = Button(this).apply {
-            text = "BORRAR"
-            setBackgroundColor(Color.parseColor("#E74C3C"))
-            setTextColor(Color.WHITE)
-        }
         val row2 = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val btnUpload = Button(this).apply { text = "1. SUBIR TABLA"; setBackgroundColor(Color.parseColor("#2980B9")); setTextColor(Color.WHITE) }
+        val btnClear = Button(this).apply { text = "BORRAR"; setBackgroundColor(Color.parseColor("#E74C3C")); setTextColor(Color.WHITE) }
         row2.addView(btnUpload, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 3f))
         row2.addView(btnClear, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        root.addView(row2)
+        root.addView(row2, lp(match = true))
 
-        // Encabezados tabla
         val headerRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        headerQ = TextView(this).apply {
-            text = "PREGUNTA"; setTextColor(Color.WHITE)
-            setBackgroundColor(Color.BLACK); setPadding(8,8,8,8); gravity = android.view.Gravity.CENTER
-        }
-        val headerA2 = TextView(this).apply {
-            text = "RESPUESTA"; setTextColor(Color.WHITE)
-            setBackgroundColor(Color.BLACK); setPadding(8,8,8,8); gravity = android.view.Gravity.CENTER
-        }
-        headerA = headerA2
-        val headerImg = TextView(this).apply {
-            text = "IMG"; setTextColor(Color.WHITE)
-            setBackgroundColor(Color.BLACK); setPadding(8,8,8,8); gravity = android.view.Gravity.CENTER
-        }
+        headerQ = TextView(this).apply { text = "PREGUNTA"; setTextColor(Color.WHITE); setBackgroundColor(Color.BLACK); setPadding(8, 8, 8, 8); gravity = android.view.Gravity.CENTER }
+        headerA = TextView(this).apply { text = "RESPUESTA"; setTextColor(Color.WHITE); setBackgroundColor(Color.BLACK); setPadding(8, 8, 8, 8); gravity = android.view.Gravity.CENTER }
+        val headerImg = TextView(this).apply { text = "IMG"; setTextColor(Color.WHITE); setBackgroundColor(Color.BLACK); setPadding(8, 8, 8, 8); gravity = android.view.Gravity.CENTER }
         headerRow.addView(headerQ, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
-        headerRow.addView(headerA2, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
+        headerRow.addView(headerA, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
         headerRow.addView(headerImg, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        root.addView(headerRow)
+        root.addView(headerRow, lp(match = true))
 
-        val recycler = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@FlashcardAIActivity)
-        }
+        val recycler = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@FlashcardAIActivity) }
         adapter = RowsAdapter(currentData)
         recycler.adapter = adapter
         root.addView(recycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 600))
 
-        btnGenImages = Button(this).apply {
-            text = "2. GENERAR 3a COLUMNA"
-            setBackgroundColor(Color.parseColor("#7F8C8D"))
-            setTextColor(Color.WHITE)
-        }
-        root.addView(btnGenImages, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        btnGenImages = Button(this).apply { text = "2. GENERAR 3a COLUMNA"; setBackgroundColor(Color.parseColor("#7F8C8D")); setTextColor(Color.WHITE) }
+        root.addView(btnGenImages, lp(match = true))
 
-        val btnModel = Button(this).apply {
-            text = "Modelo: Gemini 2.0"
-            setBackgroundColor(Color.parseColor("#1A6B3A"))
-            setTextColor(Color.WHITE)
-        }
-        root.addView(btnModel, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        btnModel = Button(this).apply { text = "Modelo: Gemini 2.0"; setBackgroundColor(Color.parseColor("#1A6B3A")); setTextColor(Color.WHITE) }
+        root.addView(btnModel, lp(match = true))
 
-        val btnExport = Button(this).apply {
-            text = "IMPORTAR EN ANKI"
-            setBackgroundColor(Color.parseColor("#27AE60"))
-            setTextColor(Color.WHITE)
-        }
-        root.addView(btnExport, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        val btnExport = Button(this).apply { text = "IMPORTAR EN ANKI"; setBackgroundColor(Color.parseColor("#27AE60")); setTextColor(Color.WHITE) }
+        root.addView(btnExport, lp(match = true))
 
-        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            isIndeterminate = false
-        }
-        root.addView(progressBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply { isIndeterminate = false }
+        root.addView(progressBar, lp(match = true))
 
-        tvLog = TextView(this).apply {
-            setTextColor(Color.GREEN)
-            setBackgroundColor(Color.BLACK)
-            setPadding(8,8,8,8)
-            minLines = 3
-        }
-        root.addView(tvLog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        tvLog = TextView(this).apply { setTextColor(Color.GREEN); setBackgroundColor(Color.BLACK); setPadding(8, 8, 8, 8); minLines = 3 }
+        root.addView(tvLog, lp(match = true))
 
         setContentView(root)
-
         checkPermissions()
 
         btnAI.setOnClickListener {
@@ -202,27 +153,20 @@ ${e.stackTrace.take(5).joinToString("
             val count = etCount.text.toString().toIntOrNull() ?: 10
             if (topic.isNotEmpty()) startAiCreation(topic, count) else log("Error: Escribe un tema.")
         }
-        btnUpload.setOnClickListener {
-            val txt = etInput.text.toString()
-            if (txt.isNotEmpty()) parseManualUpload(txt) else log("Error: Input vacio.")
-        }
-        btnClear.setOnClickListener {
-            currentData.clear(); adapter.notifyDataSetChanged()
-            colQState = 0; colAState = 0; updateHeaderColors()
-            log("Memoria borrada."); progressBar.progress = 0
-        }
+        btnUpload.setOnClickListener { val txt = etInput.text.toString(); if (txt.isNotEmpty()) parseManualUpload(txt) else log("Error: Input vacio.") }
+        btnClear.setOnClickListener { currentData.clear(); adapter.notifyDataSetChanged(); colQState = 0; colAState = 0; updateHeaderColors(); log("Borrado."); progressBar.progress = 0 }
         btnGenImages.setOnClickListener { startImageGenerationProcess() }
         btnExport.setOnClickListener { exportAndImportToAnki() }
-        btnModel.setOnClickListener {
-            useGPT4 = !useGPT4
-            btnModel.text = if (useGPT4) "Modelo: GPT-4o" else "Modelo: Gemini 2.0"
-            btnModel.setBackgroundColor(Color.parseColor(if (useGPT4) "#5A2D82" else "#1A6B3A"))
-        }
+        btnModel.setOnClickListener { useGPT4 = !useGPT4; btnModel.text = if (useGPT4) "Modelo: GPT-4o" else "Modelo: Gemini 2.0"; btnModel.setBackgroundColor(Color.parseColor(if (useGPT4) "#5A2D82" else "#1A6B3A")) }
         headerQ.setOnClickListener { colQState = (colQState + 1) % 3; updateHeaderColors() }
         headerA.setOnClickListener { colAState = (colAState + 1) % 3; updateHeaderColors() }
     }
 
-    } // fin initUI
+    private fun lp(match: Boolean = false, wrap: Boolean = true, height: Int = LinearLayout.LayoutParams.WRAP_CONTENT): LinearLayout.LayoutParams {
+        val w = if (match) LinearLayout.LayoutParams.MATCH_PARENT else LinearLayout.LayoutParams.WRAP_CONTENT
+        val h = if (wrap) height else LinearLayout.LayoutParams.WRAP_CONTENT
+        return LinearLayout.LayoutParams(w, h)
+    }
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
@@ -237,7 +181,7 @@ ${e.stackTrace.take(5).joinToString("
         try {
             val bodyObj = org.json.JSONObject()
             bodyObj.put("model", "gpt-4o")
-            bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt)))
+            bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role", "user").put("content", prompt)))
             bodyObj.put("max_tokens", 1000)
             val res = client.newCall(Request.Builder()
                 .url("https://models.inference.ai.azure.com/chat/completions")
@@ -247,8 +191,7 @@ ${e.stackTrace.take(5).joinToString("
                 .build()).execute()
             if (res.isSuccessful) {
                 val json = org.json.JSONObject(res.body.string())
-                return json.getJSONArray("choices").getJSONObject(0)
-                    .getJSONObject("message").getString("content").trim()
+                return json.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim()
             }
         } catch (e: Exception) { }
         return ""
@@ -258,18 +201,14 @@ ${e.stackTrace.take(5).joinToString("
         for (key in API_KEYS_GEMINI) {
             try {
                 val bodyObj = org.json.JSONObject()
-                bodyObj.put("contents", org.json.JSONArray().put(
-                    org.json.JSONObject().put("parts", org.json.JSONArray().put(
-                        org.json.JSONObject().put("text", prompt)))))
+                bodyObj.put("contents", org.json.JSONArray().put(org.json.JSONObject().put("parts", org.json.JSONArray().put(org.json.JSONObject().put("text", prompt)))))
                 val res = client.newCall(Request.Builder()
                     .url("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=$key")
                     .post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull()))
                     .build()).execute()
                 if (res.isSuccessful) {
                     val json = org.json.JSONObject(res.body.string())
-                    return json.getJSONArray("candidates").getJSONObject(0)
-                        .getJSONObject("content").getJSONArray("parts").getJSONObject(0)
-                        .getString("text").trim()
+                    return json.getJSONArray("candidates").getJSONObject(0).getJSONObject("content").getJSONArray("parts").getJSONObject(0).getString("text").trim()
                 }
             } catch (e: Exception) { continue }
         }
@@ -289,9 +228,7 @@ ${e.stackTrace.take(5).joinToString("
         }
     }
 
-    private fun log(msg: String) {
-        runOnUiThread { tvLog.append("\n> $msg") }
-    }
+    private fun log(msg: String) { runOnUiThread { tvLog.append("\n> $msg") } }
 
     private fun startAiCreation(topic: String, qty: Int) {
         progressBar.progress = 10
@@ -301,21 +238,9 @@ ${e.stackTrace.take(5).joinToString("
             val resultText = callAI(prompt)
             if (resultText.isNotEmpty()) {
                 val newRows = mutableListOf<FlashcardRow>()
-                resultText.lines().forEach { line ->
-                    if (line.contains(";")) {
-                        val parts = line.split(";")
-                        if (parts.size >= 2) newRows.add(FlashcardRow(parts[0].trim(), parts[1].trim(), "PENDIENTE"))
-                    }
-                }
-                withContext(Dispatchers.Main) {
-                    currentData.clear(); currentData.addAll(newRows)
-                    adapter.notifyDataSetChanged()
-                    log("Exito! Creadas ${newRows.size} filas.")
-                    progressBar.progress = 100
-                }
-            } else {
-                withContext(Dispatchers.Main) { log("Error: IA no respondio.") }
-            }
+                resultText.lines().forEach { line -> if (line.contains(";")) { val p = line.split(";"); if (p.size >= 2) newRows.add(FlashcardRow(p[0].trim(), p[1].trim())) } }
+                withContext(Dispatchers.Main) { currentData.clear(); currentData.addAll(newRows); adapter.notifyDataSetChanged(); log("Exito! ${newRows.size} filas."); progressBar.progress = 100 }
+            } else { withContext(Dispatchers.Main) { log("Error: IA no respondio.") } }
         }
     }
 
@@ -327,9 +252,7 @@ ${e.stackTrace.take(5).joinToString("
             val parts = lines[i].split("|")
             if (parts.size >= 2) newRows.add(FlashcardRow(parts[0].trim(), parts[1].trim(), if (parts.size > 2) parts[2].trim() else "PENDIENTE"))
         }
-        currentData.clear(); currentData.addAll(newRows)
-        adapter.notifyDataSetChanged()
-        log("Tabla cargada (${newRows.size} filas).")
+        currentData.clear(); currentData.addAll(newRows); adapter.notifyDataSetChanged(); log("Tabla cargada (${newRows.size} filas).")
     }
 
     private fun startImageGenerationProcess() {
@@ -341,8 +264,7 @@ ${e.stackTrace.take(5).joinToString("
                 var q = ""
                 if (colQState == 2) q += "${row.q} "
                 if (colAState == 2) q += "${row.a} "
-                if (q.isEmpty() && (colQState == 1 || colAState == 1))
-                    q = callAI("Contexto: P: ${row.q}, R: ${row.a}. Dame SOLO 3 palabras clave para imagen en Google.").trim()
+                if (q.isEmpty() && (colQState == 1 || colAState == 1)) q = callAI("Contexto: P: ${row.q}, R: ${row.a}. Dame SOLO 3 palabras clave para imagen en Google.").trim()
                 q = q.trim().ifEmpty { row.q }
                 withContext(Dispatchers.Main) { log("[$index] Buscando: $q") }
                 val imgUrl = searchGoogleImage(q)
@@ -358,8 +280,7 @@ ${e.stackTrace.take(5).joinToString("
             val url = "https://www.googleapis.com/customsearch/v1?key=$GOOGLE_API_KEY&cx=$GOOGLE_CX&q=$query&searchType=image&num=3"
             val response = client.newCall(Request.Builder().url(url).build()).execute()
             if (response.isSuccessful) {
-                val json = org.json.JSONObject(response.body.string())
-                val items = json.optJSONArray("items")
+                val items = org.json.JSONObject(response.body.string()).optJSONArray("items")
                 if (items != null && items.length() > 0) items.getJSONObject(Random.nextInt(minOf(items.length(), 3))).getString("link") else ""
             } else ""
         } catch (e: Exception) { "" }
@@ -367,8 +288,7 @@ ${e.stackTrace.take(5).joinToString("
 
     private fun uploadToCloudinary(remoteUrl: String): String {
         return try {
-            val formBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-                .addFormDataPart("file", remoteUrl).addFormDataPart("upload_preset", CLOUDINARY_UPLOAD_PRESET).build()
+            val formBody = MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("file", remoteUrl).addFormDataPart("upload_preset", CLOUDINARY_UPLOAD_PRESET).build()
             val response = client.newCall(Request.Builder().url(CLOUDINARY_URL).post(formBody).build()).execute()
             if (response.isSuccessful) org.json.JSONObject(response.body.string()).getString("secure_url") else remoteUrl
         } catch (e: Exception) { remoteUrl }
@@ -382,7 +302,6 @@ ${e.stackTrace.take(5).joinToString("
         val sb = StringBuilder()
         currentData.forEach { sb.append("${it.q}\t${it.a}\t${it.imgUrl}\n") }
         try {
-            val file: File
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val values = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
@@ -391,12 +310,10 @@ ${e.stackTrace.take(5).joinToString("
                 }
                 val uri = contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                 uri?.let { contentResolver.openOutputStream(it)?.use { s -> s.write(sb.toString().toByteArray()) } }
-                // Abrir importador de Anki
                 if (uri != null) openAnkiImporter(uri)
-                return
             } else {
                 @Suppress("DEPRECATION")
-                file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), filename)
+                val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), filename)
                 file.writeText(sb.toString())
                 openAnkiImporter(Uri.fromFile(file))
             }
@@ -405,20 +322,16 @@ ${e.stackTrace.take(5).joinToString("
 
     private fun openAnkiImporter(uri: Uri) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW).apply {
+            startActivity(Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "text/plain")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 setPackage("com.ichi2.anki")
-            }
-            startActivity(intent)
-            log("Abriendo importador de Anki...")
+            })
         } catch (e: Exception) {
-            // Fallback: abrir con selector
-            val intent = Intent(Intent.ACTION_VIEW).apply {
+            startActivity(Intent.createChooser(Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "text/plain")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivity(Intent.createChooser(intent, "Importar en Anki"))
+            }, "Importar en Anki"))
         }
     }
 
@@ -430,15 +343,15 @@ ${e.stackTrace.take(5).joinToString("
 
     inner class RowsAdapter(private val rows: List<FlashcardRow>) : RecyclerView.Adapter<RowsAdapter.VH>() {
         inner class VH(v: View) : RecyclerView.ViewHolder(v) {
-            val etQ: TextView = v.findViewWithTag("q")
-            val etA: TextView = v.findViewWithTag("a")
+            val tvQ: TextView = v.findViewWithTag("q")
+            val tvA: TextView = v.findViewWithTag("a")
             val tvImg: TextView = v.findViewWithTag("img")
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val row = LinearLayout(parent.context).apply { orientation = LinearLayout.HORIZONTAL }
-            val q = TextView(parent.context).apply { tag = "q"; setPadding(4,4,4,4) }
-            val a = TextView(parent.context).apply { tag = "a"; setPadding(4,4,4,4) }
-            val img = TextView(parent.context).apply { tag = "img"; setPadding(4,4,4,4) }
+            val q = TextView(parent.context).apply { tag = "q"; setPadding(4, 4, 4, 4) }
+            val a = TextView(parent.context).apply { tag = "a"; setPadding(4, 4, 4, 4) }
+            val img = TextView(parent.context).apply { tag = "img"; setPadding(4, 4, 4, 4) }
             row.addView(q, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
             row.addView(a, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
             row.addView(img, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
@@ -446,8 +359,7 @@ ${e.stackTrace.take(5).joinToString("
         }
         override fun onBindViewHolder(holder: VH, position: Int) {
             val item = rows[position]
-            holder.etQ.text = item.q
-            holder.etA.text = item.a
+            holder.tvQ.text = item.q; holder.tvA.text = item.a
             holder.tvImg.text = if (item.imgUrl.length > 15) "OK" else item.imgUrl
             if (item.imgUrl.startsWith("http")) holder.tvImg.setTextColor(Color.GREEN)
         }
