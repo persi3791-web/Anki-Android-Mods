@@ -233,6 +233,7 @@ class DeckPickerFloatingActionMenu(
                 }
             } else {
                 // Close without animation
+                binding.addAiLayout.visibility = View.GONE
                 binding.addSharedLayout.visibility = View.GONE
                 binding.addDeckLayout.visibility = View.GONE
                 binding.addFilteredDeckLayout.visibility = View.GONE
@@ -313,6 +314,7 @@ class DeckPickerFloatingActionMenu(
                 }
             } else {
                 // Close without animation
+                binding.addAiLayout.visibility = View.GONE
                 binding.addSharedLayout.visibility = View.GONE
                 binding.addDeckLayout.visibility = View.GONE
                 binding.addFilteredDeckLayout.visibility = View.GONE
