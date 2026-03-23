@@ -67,7 +67,21 @@ class FlashcardAIActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try {
+            initUI()
+        } catch (e: Exception) {
+            setContentView(android.widget.TextView(this).apply {
+                text = "ERROR: ${e.javaClass.simpleName}
+${e.message}
+${e.stackTrace.take(5).joinToString("
+")}"
+                setPadding(20, 20, 20, 20)
+                setTextColor(android.graphics.Color.RED)
+            })
+        }
+    }
 
+    private fun initUI() {
         // Crear layout programáticamente
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -207,6 +221,8 @@ class FlashcardAIActivity : AppCompatActivity() {
         headerQ.setOnClickListener { colQState = (colQState + 1) % 3; updateHeaderColors() }
         headerA.setOnClickListener { colAState = (colAState + 1) % 3; updateHeaderColors() }
     }
+
+    } // fin initUI
 
     override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
