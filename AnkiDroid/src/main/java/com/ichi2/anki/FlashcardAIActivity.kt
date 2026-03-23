@@ -84,14 +84,22 @@ class FlashcardAIActivity : AppCompatActivity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
+            setBackgroundColor(Color.parseColor("#1a1a1a"))
         }
 
-        etInput = EditText(this).apply { hint = "Tema o pega tabla con | separadores"; minLines = 3; maxLines = 6 }
+        etInput = EditText(this).apply {
+            hint = "Tema o pega tabla con | separadores"
+            minLines = 3; maxLines = 6
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.parseColor("#888888"))
+            setBackgroundColor(Color.parseColor("#2d2d2d"))
+            setPadding(12, 12, 12, 12)
+        }
         root.addView(etInput, lp(match = true))
 
         val rowCount = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        val countLabel = TextView(this).apply { text = "Cant: "; setPadding(0, 8, 8, 0) }
-        etCount = EditText(this).apply { setText("10"); inputType = android.text.InputType.TYPE_CLASS_NUMBER }
+        val countLabel = TextView(this).apply { text = "Cant: "; setPadding(0, 8, 8, 0); setTextColor(Color.WHITE) }
+        etCount = EditText(this).apply { setText("10"); inputType = android.text.InputType.TYPE_CLASS_NUMBER; setTextColor(Color.WHITE); setBackgroundColor(Color.parseColor("#2d2d2d")) }
         val btnAI = Button(this).apply {
             text = "CREAR CON IA"
             setBackgroundColor(Color.parseColor("#E67E22"))
@@ -118,7 +126,7 @@ class FlashcardAIActivity : AppCompatActivity() {
         headerRow.addView(headerImg, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         root.addView(headerRow, lp(match = true))
 
-        val recycler = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@FlashcardAIActivity) }
+        val recycler = RecyclerView(this).apply { layoutManager = LinearLayoutManager(this@FlashcardAIActivity); setBackgroundColor(Color.parseColor("#2d2d2d")) }
         adapter = RowsAdapter(currentData)
         recycler.adapter = adapter
         root.addView(recycler, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 600))
@@ -345,9 +353,9 @@ class FlashcardAIActivity : AppCompatActivity() {
         }
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
             val row = LinearLayout(parent.context).apply { orientation = LinearLayout.HORIZONTAL }
-            val q = TextView(parent.context).apply { tag = "q"; setPadding(4, 4, 4, 4) }
-            val a = TextView(parent.context).apply { tag = "a"; setPadding(4, 4, 4, 4) }
-            val img = TextView(parent.context).apply { tag = "img"; setPadding(4, 4, 4, 4) }
+            val q = TextView(parent.context).apply { tag = "q"; setPadding(4, 4, 4, 4); setTextColor(Color.WHITE) }
+            val a = TextView(parent.context).apply { tag = "a"; setPadding(4, 4, 4, 4); setTextColor(Color.WHITE) }
+            val img = TextView(parent.context).apply { tag = "img"; setPadding(4, 4, 4, 4); setTextColor(Color.WHITE) }
             row.addView(q, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
             row.addView(a, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f))
             row.addView(img, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
