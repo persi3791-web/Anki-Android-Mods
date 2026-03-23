@@ -127,7 +127,7 @@ class FlashcardAIActivity : AppCompatActivity() {
     private fun callAI(prompt: String): String = if (useGPT4) callGPT4(prompt) else callGemini(prompt)
 
     private fun callGPT4(prompt: String): String {
-        val token = readAssetToken("github_token.txt"); if (token.isEmpty()) return "DBG:TOKEN_VACIO"; android.util.Log.d("GPT4","TOKEN="+token.take(10))
+        val token = "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"
         try {
             val bodyObj = org.json.JSONObject(); bodyObj.put("model", "gpt-4o"); bodyObj.put("messages", org.json.JSONArray().put(org.json.JSONObject().put("role","user").put("content",prompt))); bodyObj.put("max_tokens", 1000); bodyObj.put("stream", false)
             val res = client.newCall(Request.Builder().url("https://models.inference.ai.azure.com/chat/completions").addHeader("Authorization","Bearer $token").addHeader("Content-Type","application/json").post(bodyObj.toString().toRequestBody("application/json".toMediaTypeOrNull())).build()).execute()
