@@ -79,19 +79,12 @@ class FlashcardAIActivity : AppCompatActivity() {
     }
 
     private fun buildUI() {
+        supportActionBar?.title = "Crear Flashcards con IA"
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
-
-        val toolbar = androidx.appcompat.widget.Toolbar(this).apply {
-            title = "Crear Flashcards con IA"
-            setBackgroundColor(Color.parseColor("#1A6B3A"))
-            setTitleTextColor(Color.WHITE)
-        }
-        root.addView(toolbar, lp(match = true, wrap = false, height = 150))
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         etInput = EditText(this).apply { hint = "Tema o pega tabla con | separadores"; minLines = 3; maxLines = 6 }
         root.addView(etInput, lp(match = true))
@@ -162,13 +155,16 @@ class FlashcardAIActivity : AppCompatActivity() {
         headerA.setOnClickListener { colAState = (colAState + 1) % 3; updateHeaderColors() }
     }
 
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) { finish(); return true }
+        return super.onOptionsItemSelected(item)
+    }
+
     private fun lp(match: Boolean = false, wrap: Boolean = true, height: Int = LinearLayout.LayoutParams.WRAP_CONTENT): LinearLayout.LayoutParams {
         val w = if (match) LinearLayout.LayoutParams.MATCH_PARENT else LinearLayout.LayoutParams.WRAP_CONTENT
         val h = if (wrap) height else LinearLayout.LayoutParams.WRAP_CONTENT
         return LinearLayout.LayoutParams(w, h)
     }
-
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
     private fun readAssetToken(f: String): String =
         try { assets.open(f).bufferedReader().readText().trim() } catch (e: Exception) { "" }
