@@ -76,7 +76,7 @@ class FlashcardAIActivity : AppCompatActivity() {
         supportActionBar?.title = "Crear Flashcards con IA"
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(BG_DARK); setPadding(16,16,16,32) }
-        etInput = EditText(this).apply { hint = "Tema o pega tabla con | separadores"; minLines = 3; maxLines = 6; setTextColor(TEXT_WHITE); setHintTextColor(TEXT_HINT); background = inputBg(); setPadding(12,12,12,12) }
+        etInput = EditText(this).apply { hint = "Escribe un tema: ej. fotosintesis"; minLines = 3; maxLines = 6; setTextColor(TEXT_WHITE); setHintTextColor(TEXT_HINT); background = inputBg(); setPadding(12,12,12,12) }
         val etInputParams = mpWrap()
         etInputParams.topMargin = (150 * resources.displayMetrics.density).toInt()
         root.addView(etInput, etInputParams); root.addView(space(8))
@@ -157,7 +157,7 @@ class FlashcardAIActivity : AppCompatActivity() {
     private fun log(msg: String) { runOnUiThread { tvLog.append("\n> $msg") } }
 
     private fun startAiCreation(topic: String, qty: Int) {
-        progressBar.progress = 10; log("Solicitando a ${if (useGPT4) "GPT-4o" else "Gemini"} $qty cartas...")
+        progressBar.progress = 10; log("Tema: $topic | Solicitando a ${if (useGPT4) "GPT-4o" else "Gemini"} $qty cartas...")
         lifecycleScope.launch(Dispatchers.IO) {
             val resultText = callAI("Actua como experto educativo. Genera EXACTAMENTE $qty flashcards del tema: $topic. Formato CSV punto y coma: Pregunta ; Respuesta. SOLO DOS COLUMNAS. Sin comillas, sin encabezados.")
             if (resultText.isNotEmpty()) {
