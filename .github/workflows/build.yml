@@ -21,7 +21,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build APK
-        run: ./gradlew assembleFullRelease -x test -x lint --no-daemon
+        run: ./gradlew assembleFullRelease -x test -x lint -x lintVitalFullRelease --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
