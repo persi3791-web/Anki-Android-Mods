@@ -78,7 +78,7 @@ class ForgetCurveCalendarFragment : Fragment() {
             setPadding(4, 4, 4, 4)
             setTypeface(null, if (header) android.graphics.Typeface.BOLD
                                else android.graphics.Typeface.NORMAL)
-            if (highlight) setBackgroundResource(R.color.material_blue_600)
+            if (highlight) setBackgroundColor(0xFF1565C0.toInt())
         }
         val spec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
         tv.layoutParams = GridLayout.LayoutParams(spec, spec).apply {
