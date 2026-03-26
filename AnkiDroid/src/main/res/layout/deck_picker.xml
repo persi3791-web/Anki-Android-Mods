@@ -90,6 +90,8 @@
 
             </FrameLayout>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <include layout="@layout/fragment_forget_curve_calendar"/>
     </LinearLayout>
 
     <include layout="@layout/anki_progress"/>

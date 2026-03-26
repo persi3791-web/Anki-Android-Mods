@@ -650,6 +650,12 @@ open class DeckPicker :
         )
 
         setupFlows()
+
+        // Calendario curva del olvido
+        supportFragmentManager.commit {
+            replace(R.id.forget_curve_fragment_container,
+                com.ichi2.anki.forgetcurve.ForgetCurveCalendarFragment.newInstance())
+        }
     }
 
     override fun setupBackPressedCallbacks() {
