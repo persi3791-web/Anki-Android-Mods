@@ -19,7 +19,8 @@
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/pull_to_sync_wrapper"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="0dp"
+        android:layout_weight="1">
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -34,7 +35,7 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/decks"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:clipToPadding="false"
                         android:drawSelectorOnTop="true"
                         android:fastScrollEnabled="true"
@@ -94,7 +95,7 @@
     <androidx.fragment.app.FragmentContainerView
     android:id="@+id/forget_curve_fragment_container"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"/>
+    android:layout_height="180dp"/>
     </LinearLayout>
 
     <include layout="@layout/anki_progress"/>
