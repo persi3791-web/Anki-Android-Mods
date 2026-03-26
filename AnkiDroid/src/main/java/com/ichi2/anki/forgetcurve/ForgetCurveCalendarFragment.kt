@@ -56,6 +56,7 @@ class ForgetCurveCalendarFragment : Fragment() {
 
         // ── Leyenda de colores ───────────────────────────────────
         val legendScroll = HorizontalScrollView(requireContext()).apply {
+            tag = "legendScroll"
             setPadding(12, 0, 12, 6)
         }
         val legendRow = LinearLayout(requireContext()).apply {
@@ -95,7 +96,7 @@ class ForgetCurveCalendarFragment : Fragment() {
 
     private fun updateLegend() {
         val root = view ?: return
-        val legendRow = (root.getChildAt(1) as? HorizontalScrollView)
+        val legendRow = root.findViewWithTag<HorizontalScrollView>("legendScroll")
             ?.getChildAt(0) as? LinearLayout ?: return
         legendRow.removeAllViews()
         for (deck in allDecks) {

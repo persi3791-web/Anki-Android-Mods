@@ -54,11 +54,12 @@ object ForgetCurveScheduler {
     }
 
     private fun projectFromAnkiDB(windowDays: Int): List<ReviewSession> {
-        val col = com.ichi2.libanki.CollectionManager.getColUnsafe()
+        val col = com.ichi2.anki.CollectionManager.getColUnsafe()
         val today = col.sched.today
         val map = mutableMapOf<Triple<Int,Int,String>, Int>()
 
-        val cursor = col.db.query(
+        val db = col.db.database
+        val cursor = db.rawQuery(
             """
             SELECT c.due - ?, d.name, COUNT(*)
             FROM cards c
