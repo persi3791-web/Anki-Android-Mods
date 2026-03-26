@@ -91,7 +91,10 @@
             </FrameLayout>
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <include layout="@layout/fragment_forget_curve_calendar"/>
+    <androidx.fragment.app.FragmentContainerView
+    android:id="@+id/forget_curve_fragment_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"/>
     </LinearLayout>
 
     <include layout="@layout/anki_progress"/>
