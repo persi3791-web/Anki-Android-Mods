@@ -21,10 +21,10 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build APK
-        run: ./gradlew assembleFullDebug -x test -x lint --no-daemon
+        run: ./gradlew assembleFullRelease -x test -x lint --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AnkiDroid-debug
-          path: AnkiDroid/build/outputs/apk/full/debug/*.apk
+          name: AnkiDroid-release
+          path: AnkiDroid/build/outputs/apk/full/release/*.apk
