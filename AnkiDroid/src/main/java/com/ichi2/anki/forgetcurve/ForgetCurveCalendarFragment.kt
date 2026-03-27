@@ -32,9 +32,11 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
+import com.ichi2.anki.CollectionManager.withCol
+import com.ichi2.anki.launchCatchingTask
+
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+
 
 class ForgetCurveCalendarFragment : Fragment() {
 
@@ -151,29 +153,42 @@ class ForgetCurveCalendarFragment : Fragment() {
 
     // ── Pantalla completa ────────────────────────────────────────────────────
     private fun toggleFullscreen(btn: Button) {
-        val activity = activity ?: return
+        val act = activity ?: return
         isFullscreen = !isFullscreen
-        val window = activity.window
-        WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
-        val controller = WindowCompat.getInsetsController(window, window.decorView)
+        val window = act.window
         if (isFullscreen) {
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior =
-                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            (act as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.hide()
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior =
+                    androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+            view?.rootView?.findViewById<android.view.View>(
+                com.ichi2.anki.R.id.pull_to_sync_wrapper
+            )?.visibility = android.view.View.GONE
+            view?.rootView?.requestLayout()
             btn.text = "✕"
         } else {
-            controller.show(WindowInsetsCompat.Type.systemBars())
+            (act as? androidx.appcompat.app.AppCompatActivity)?.supportActionBar?.show()
+            WindowCompat.setDecorFitsSystemWindows(window, true)
+            WindowCompat.getInsetsController(window, window.decorView)
+                .show(WindowInsetsCompat.Type.systemBars())
+            view?.rootView?.findViewById<android.view.View>(
+                com.ichi2.anki.R.id.pull_to_sync_wrapper
+            )?.visibility = android.view.View.VISIBLE
+            view?.rootView?.requestLayout()
             btn.text = "⛶"
         }
     }
 
     // ── Carga en background ──────────────────────────────────────────────────
     private fun loadAndRender() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        launchCatchingTask {
             // Cargar BD en hilo IO
-            val loaded = withContext(Dispatchers.IO) {
-                try { ForgetCurveScheduler.projectSessions() }
-                catch (e: Exception) { ForgetCurveScheduler.mockSessionsPublic() }
+            val loaded = withCol {
+                ForgetCurveScheduler.projectSessions(this)
+                
             }
             // Actualizar UI en hilo principal
             sessions = loaded
