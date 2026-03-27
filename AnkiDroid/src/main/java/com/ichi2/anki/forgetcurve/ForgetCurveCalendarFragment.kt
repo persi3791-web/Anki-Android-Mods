@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2024 Ankidroid Open Source Team <ankidroid@gmail.com>
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License as published by the Free Software
+ * Foundation; either version 3 of the License, or (at your option) any later
+ * version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+ * PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.ichi2.anki.forgetcurve
 
 import android.graphics.Color
@@ -15,97 +30,108 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 
 class ForgetCurveCalendarFragment : Fragment() {
+
     companion object {
         fun newInstance() = ForgetCurveCalendarFragment()
-
-        private const val COL_WIDTH_DP = 90
-        private const val HOUR_WIDTH_DP = 44
-        private const val ROW_HEIGHT_DP = 52
-        private const val HEADER_HEIGHT_DP = 42
+        private const val COL_WIDTH_DP = 100
+        private const val HOUR_WIDTH_DP = 48
+        private const val ROW_HEIGHT_DP = 56
+        private const val HEADER_HEIGHT_DP = 48
     }
 
     private var sessions: List<ForgetCurveScheduler.ReviewSession> = emptyList()
     private var allDecks: List<String> = emptyList()
     private var filteredDecks: MutableSet<String> = mutableSetOf()
     private lateinit var gridContainer: LinearLayout
+    private lateinit var rootLayout: LinearLayout
+    private var isFullscreen = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        val root =
-            LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-                setBackgroundColor(Color.parseColor("#121212"))
-                setPadding(0, 8, 0, 8)
-            }
-
-        // ── Encabezado ──────────────────────────────────────────
-        val header =
-            LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(12, 0, 12, 6)
-            }
-        val title =
-            TextView(requireContext()).apply {
-                text = "📅 Curva del olvido"
-                textSize = 13f
-                setTextColor(Color.WHITE)
-                setTypeface(null, Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-        val btnFilter =
-            Button(requireContext()).apply {
-                text = "🎯 Mazos"
-                textSize = 10f
-                setTextColor(Color.WHITE)
-                setBackgroundColor(Color.parseColor("#1565C0"))
-                setPadding(16, 4, 16, 4)
-                setOnClickListener { showDeckFilterDialog() }
-            }
+        rootLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor("#121212"))
+            setPadding(0, 8, 0, 8)
+        }
+        val header = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(12, 0, 12, 6)
+        }
+        val title = TextView(requireContext()).apply {
+            text = "Curva del olvido"
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            setTypeface(null, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val btnFilter = Button(requireContext()).apply {
+            text = "Mazos"
+            textSize = 10f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#1565C0"))
+            setPadding(16, 4, 16, 4)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = 8 }
+            setOnClickListener { showDeckFilterDialog() }
+        }
+        val btnFullscreen = Button(requireContext()).apply {
+            text = "[ ]"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#333333"))
+            setPadding(16, 4, 16, 4)
+            setOnClickListener { toggleFullscreen() }
+        }
         header.addView(title)
         header.addView(btnFilter)
-        root.addView(header)
-
-        // ── Leyenda de colores ───────────────────────────────────
-        val legendScroll =
-            HorizontalScrollView(requireContext()).apply {
-                tag = "legendScroll"
-                setPadding(12, 0, 12, 6)
-            }
-        val legendRow =
-            LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
+        header.addView(btnFullscreen)
+        rootLayout.addView(header)
+        val legendScroll = HorizontalScrollView(requireContext()).apply {
+            tag = "legendScroll"
+            setPadding(12, 0, 12, 6)
+        }
+        val legendRow = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
         legendScroll.addView(legendRow)
-        root.addView(legendScroll)
-
-        // ── Grid con scroll horizontal + vertical ────────────────
+        rootLayout.addView(legendScroll)
         val hScroll = HorizontalScrollView(requireContext())
         val vScroll = ScrollView(requireContext())
-        gridContainer =
-            LinearLayout(requireContext()).apply {
-                orientation = LinearLayout.VERTICAL
-            }
+        gridContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+        }
         vScroll.addView(gridContainer)
         hScroll.addView(vScroll)
-        hScroll.layoutParams =
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                320.dp,
-            )
-        root.addView(hScroll)
-
-        return root
+        hScroll.layoutParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.MATCH_PARENT,
+        )
+        rootLayout.addView(hScroll)
+        return rootLayout
     }
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         loadAndRender()
+    }
+
+    private fun toggleFullscreen() {
+        isFullscreen = !isFullscreen
+        val activity = requireActivity()
+        if (isFullscreen) {
+            activity.window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                )
+        } else {
+            activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+        }
     }
 
     private fun loadAndRender() {
@@ -118,20 +144,18 @@ class ForgetCurveCalendarFragment : Fragment() {
 
     private fun updateLegend() {
         val root = view ?: return
-        val legendRow =
-            root
-                .findViewWithTag<HorizontalScrollView>("legendScroll")
-                ?.getChildAt(0) as? LinearLayout ?: return
+        val legendRow = root
+            .findViewWithTag<HorizontalScrollView>("legendScroll")
+            ?.getChildAt(0) as? LinearLayout ?: return
         legendRow.removeAllViews()
         for (deck in allDecks) {
             val color = ForgetCurveScheduler.colorForDeck(deck, allDecks)
-            val chip =
-                TextView(requireContext()).apply {
-                    text = "● $deck"
-                    textSize = 9f
-                    setTextColor(color)
-                    setPadding(8, 2, 12, 2)
-                }
+            val chip = TextView(requireContext()).apply {
+                text = "● $deck"
+                textSize = 9f
+                setTextColor(color)
+                setPadding(8, 2, 12, 2)
+            }
             legendRow.addView(chip)
         }
     }
@@ -141,50 +165,36 @@ class ForgetCurveCalendarFragment : Fragment() {
         val ctx = requireContext()
         val days = 7
         val hours = (0..23).toList()
-
         val activeSessions = sessions.filter { it.deckName in filteredDecks }
-        // (día, hora) → lista de sesiones
         val map = mutableMapOf<Pair<Int, Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
         for (s in activeSessions) {
             map.getOrPut(Pair(s.dayOffset, s.hour)) { mutableListOf() }.add(s)
         }
-
-        // ── Fila de encabezado de días ───────────────────────────
-        val dayHeaderRow =
-            LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setBackgroundColor(Color.parseColor("#1E1E1E"))
-            }
-        // Celda esquina
+        val dayHeaderRow = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(Color.parseColor("#1E1E1E"))
+        }
         dayHeaderRow.addView(makeLabelCell(ctx, "", HOUR_WIDTH_DP.dp, HEADER_HEIGHT_DP.dp))
-        // Separador vertical
         dayHeaderRow.addView(makeDividerV(ctx))
-
         for (d in 0 until days) {
             dayHeaderRow.addView(makeDayHeader(ctx, d))
             if (d < days - 1) dayHeaderRow.addView(makeDividerV(ctx))
         }
         gridContainer.addView(dayHeaderRow)
         gridContainer.addView(makeDividerH(ctx))
-
-        // ── Filas de horas ───────────────────────────────────────
         for (h in hours) {
-            val row =
-                LinearLayout(ctx).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    minimumHeight = ROW_HEIGHT_DP.dp
-                }
-            // Etiqueta hora
-            val ampm =
-                when {
-                    h == 0 -> "12\nam"
-                    h < 12 -> "$h\nam"
-                    h == 12 -> "12\npm"
-                    else -> "${h - 12}\npm"
-                }
+            val row = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                minimumHeight = ROW_HEIGHT_DP.dp
+            }
+            val ampm = when {
+                h == 0 -> "12\nam"
+                h < 12 -> "$h\nam"
+                h == 12 -> "12\npm"
+                else -> "${h - 12}\npm"
+            }
             row.addView(makeLabelCell(ctx, ampm, HOUR_WIDTH_DP.dp, ROW_HEIGHT_DP.dp))
             row.addView(makeDividerV(ctx))
-
             for (d in 0 until days) {
                 val entries = map[Pair(d, h)]
                 row.addView(makeEventCell(ctx, entries))
@@ -195,12 +205,7 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
     }
 
-    // ── Celdas ──────────────────────────────────────────────────
-
-    private fun makeDayHeader(
-        ctx: android.content.Context,
-        day: Int,
-    ): TextView =
+    private fun makeDayHeader(ctx: android.content.Context, day: Int): TextView =
         TextView(ctx).apply {
             text = ForgetCurveScheduler.dayLabel(day)
             textSize = 10f
@@ -210,12 +215,7 @@ class ForgetCurveCalendarFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(COL_WIDTH_DP.dp, HEADER_HEIGHT_DP.dp)
         }
 
-    private fun makeLabelCell(
-        ctx: android.content.Context,
-        text: String,
-        w: Int,
-        h: Int,
-    ): TextView =
+    private fun makeLabelCell(ctx: android.content.Context, text: String, w: Int, h: Int): TextView =
         TextView(ctx).apply {
             this.text = text
             textSize = 9f
@@ -228,54 +228,42 @@ class ForgetCurveCalendarFragment : Fragment() {
         ctx: android.content.Context,
         entries: List<ForgetCurveScheduler.ReviewSession>?,
     ): LinearLayout {
-        val cell =
-            LinearLayout(ctx).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.TOP
-                layoutParams = LinearLayout.LayoutParams(COL_WIDTH_DP.dp, ROW_HEIGHT_DP.dp)
-                setPadding(2, 2, 2, 2)
-            }
+        val cell = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.TOP
+            layoutParams = LinearLayout.LayoutParams(COL_WIDTH_DP.dp, ROW_HEIGHT_DP.dp)
+            setPadding(2, 2, 2, 2)
+        }
         if (entries.isNullOrEmpty()) return cell
-
         for (s in entries) {
             val color = ForgetCurveScheduler.colorForDeck(s.deckName, allDecks)
-            val eventView =
-                TextView(ctx).apply {
-                    text = "${s.deckName}\n${s.cardCount} tarjetas"
-                    textSize = 7.5f
-                    setTextColor(Color.WHITE)
-                    setBackgroundColor(color)
-                    setPadding(4, 2, 4, 2)
-                    setTypeface(null, Typeface.BOLD)
-                    layoutParams =
-                        LinearLayout
-                            .LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                            ).apply { bottomMargin = 2 }
-                }
+            val minutos = (s.cardCount * 1.5).toInt()
+            val eventView = TextView(ctx).apply {
+                text = "${s.deckName}\n${s.cardCount} tarj · ${minutos}min"
+                textSize = 7.5f
+                setTextColor(Color.WHITE)
+                setBackgroundColor(color)
+                setPadding(4, 2, 4, 2)
+                setTypeface(null, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = 2 }
+            }
             cell.addView(eventView)
         }
         return cell
     }
 
-    private fun makeDividerV(ctx: android.content.Context): View =
-        View(ctx).apply {
-            setBackgroundColor(Color.parseColor("#2A2A2A"))
-            layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
-        }
+    private fun makeDividerV(ctx: android.content.Context): View = View(ctx).apply {
+        setBackgroundColor(Color.parseColor("#2A2A2A"))
+        layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
+    }
 
-    private fun makeDividerH(ctx: android.content.Context): View =
-        View(ctx).apply {
-            setBackgroundColor(Color.parseColor("#2A2A2A"))
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    1,
-                )
-        }
-
-    // ── Diálogo filtro mazos ─────────────────────────────────────
+    private fun makeDividerH(ctx: android.content.Context): View = View(ctx).apply {
+        setBackgroundColor(Color.parseColor("#2A2A2A"))
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+    }
 
     private fun showDeckFilterDialog() {
         if (allDecks.isEmpty()) return
@@ -289,10 +277,12 @@ class ForgetCurveCalendarFragment : Fragment() {
                 } else {
                     filteredDecks.remove(allDecks[which])
                 }
-            }.setPositiveButton("Aplicar") { _, _ ->
+            }
+            .setPositiveButton("Aplicar") { _, _ ->
                 updateLegend()
                 renderGrid()
-            }.setNegativeButton("Cancelar", null)
+            }
+            .setNegativeButton("Cancelar", null)
             .show()
     }
 
