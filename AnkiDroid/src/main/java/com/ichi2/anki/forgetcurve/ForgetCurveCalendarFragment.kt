@@ -195,6 +195,15 @@ class ForgetCurveCalendarFragment : Fragment() {
             loadingText.visibility = View.GONE
 
             val allPaths = mutableSetOf<String>()
+            // Cargar TODOS los mazos de la colección
+            val allDeckNames = withCol { decks.allNamesAndIds().map { it.name } }
+            for (name in allDeckNames) {
+                val parts = name.split("::")
+                for (i in parts.indices) {
+                    allPaths.add(parts.take(i + 1).joinToString("::"))
+                }
+            }
+            // También incluir mazos de sesiones
             for (s in sessions) {
                 val parts = s.fullDeckPath.split("::")
                 for (i in parts.indices) {
@@ -409,9 +418,11 @@ class ForgetCurveCalendarFragment : Fragment() {
             val deckId = entries.first().deckId
             launchCatchingTask {
                 withCol { decks.select(deckId) }
-                startActivity(android.content.Intent(
-                    requireContext(), com.ichi2.anki.Reviewer::class.java))
             }
+            val intent = android.content.Intent(requireContext(), com.ichi2.anki.DeckPicker::class.java).apply {
+                flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(intent)
         }
         for (s in entries) {
             val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath)
