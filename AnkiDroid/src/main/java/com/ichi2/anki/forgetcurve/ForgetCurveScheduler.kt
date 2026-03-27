@@ -18,7 +18,7 @@ object ForgetCurveScheduler {
 
     fun projectSessions(col: Collection): List<ReviewSession> {
         return try {
-            val crt = col.crt
+            val crt = col.db.queryLongScalar("SELECT crt FROM col")
             val today = ((System.currentTimeMillis() / 1000L - crt) / 86400).toInt()
             val sql = "SELECT (c.due - " + today + ") AS dy, d.name, d.id, COUNT(*) " +
                 "FROM cards c JOIN decks d ON c.did = d.id " +
