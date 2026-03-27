@@ -23,10 +23,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 
 class ForgetCurveCalendarFragment : Fragment() {
@@ -40,8 +43,8 @@ class ForgetCurveCalendarFragment : Fragment() {
     }
 
     private var sessions: List<ForgetCurveScheduler.ReviewSession> = emptyList()
-    private var allDecks: List<String> = emptyList()
-    private var filteredDecks: MutableSet<String> = mutableSetOf()
+    private var deckTree: MutableMap<String, Boolean> = mutableMapOf()
+    private var deckCollapsed: MutableMap<String, Boolean> = mutableMapOf()
     private lateinit var gridContainer: LinearLayout
     private lateinit var rootLayout: LinearLayout
     private var isFullscreen = false
@@ -77,15 +80,15 @@ class ForgetCurveCalendarFragment : Fragment() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { marginEnd = 8 }
-            setOnClickListener { showDeckFilterDialog() }
+            setOnClickListener { showDeckTreeDialog() }
         }
         val btnFullscreen = Button(requireContext()).apply {
-            text = "[ ]"
-            textSize = 14f
+            text = "⛶"
+            textSize = 18f
             setTextColor(Color.WHITE)
             setBackgroundColor(Color.parseColor("#333333"))
             setPadding(16, 4, 16, 4)
-            setOnClickListener { toggleFullscreen() }
+            setOnClickListener { toggleFullscreen(this) }
         }
         header.addView(title)
         header.addView(btnFilter)
@@ -120,21 +123,35 @@ class ForgetCurveCalendarFragment : Fragment() {
         loadAndRender()
     }
 
-    private fun toggleFullscreen() {
+    private fun toggleFullscreen(btn: Button) {
         isFullscreen = !isFullscreen
         val window = requireActivity().window
-        val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
+        val controller = WindowCompat.getInsetsController(window, window.decorView)
         if (isFullscreen) {
-            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            btn.text = "✕"
         } else {
-            controller.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            btn.text = "⛶"
         }
     }
 
     private fun loadAndRender() {
         sessions = ForgetCurveScheduler.projectSessions()
-        allDecks = sessions.map { it.deckName }.distinct().sorted()
-        if (filteredDecks.isEmpty()) filteredDecks.addAll(allDecks)
+        val allPaths = mutableSetOf<String>()
+        for (s in sessions) {
+            val parts = s.fullDeckPath.split("::")
+            for (i in parts.indices) {
+                allPaths.add(parts.take(i + 1).joinToString("::"))
+            }
+        }
+        for (path in allPaths) {
+            if (!deckTree.containsKey(path)) deckTree[path] = true
+        }
+        deckTree.keys.retainAll(allPaths)
         updateLegend()
         renderGrid()
     }
@@ -145,10 +162,11 @@ class ForgetCurveCalendarFragment : Fragment() {
             .findViewWithTag<HorizontalScrollView>("legendScroll")
             ?.getChildAt(0) as? LinearLayout ?: return
         legendRow.removeAllViews()
-        for (deck in allDecks) {
-            val color = ForgetCurveScheduler.colorForDeck(deck, allDecks)
+        val leafDecks = sessions.map { it.fullDeckPath }.distinct().sorted()
+        for (deck in leafDecks) {
+            val color = ForgetCurveScheduler.colorForDeck(deck, leafDecks)
             val chip = TextView(requireContext()).apply {
-                text = "● $deck"
+                text = "● ${deck.substringAfterLast("::")}"
                 textSize = 9f
                 setTextColor(color)
                 setPadding(8, 2, 12, 2)
@@ -162,7 +180,13 @@ class ForgetCurveCalendarFragment : Fragment() {
         val ctx = requireContext()
         val days = 7
         val hours = (0..23).toList()
-        val activeSessions = sessions.filter { it.deckName in filteredDecks }
+        val visibleDecks = sessions
+            .map { it.fullDeckPath }
+            .distinct()
+            .filter { path -> isPathVisible(path) }
+            .toSet()
+        val activeSessions = sessions.filter { it.fullDeckPath in visibleDecks }
+        val leafDecks = sessions.map { it.fullDeckPath }.distinct().sorted()
         val map = mutableMapOf<Pair<Int, Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
         for (s in activeSessions) {
             map.getOrPut(Pair(s.dayOffset, s.hour)) { mutableListOf() }.add(s)
@@ -194,11 +218,102 @@ class ForgetCurveCalendarFragment : Fragment() {
             row.addView(makeDividerV(ctx))
             for (d in 0 until days) {
                 val entries = map[Pair(d, h)]
-                row.addView(makeEventCell(ctx, entries))
+                row.addView(makeEventCell(ctx, entries, leafDecks))
                 if (d < days - 1) row.addView(makeDividerV(ctx))
             }
             gridContainer.addView(row)
             gridContainer.addView(makeDividerH(ctx))
+        }
+    }
+
+    private fun isPathVisible(path: String): Boolean {
+        val parts = path.split("::")
+        for (i in parts.indices) {
+            val ancestor = parts.take(i + 1).joinToString("::")
+            if (deckTree[ancestor] == false) return false
+        }
+        return true
+    }
+
+    private fun showDeckTreeDialog() {
+        if (deckTree.isEmpty()) return
+        val ctx = requireContext()
+        val scroll = ScrollView(ctx)
+        val container = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(24, 16, 24, 16)
+        }
+        scroll.addView(container)
+        buildTreeUI(container)
+        android.app.AlertDialog
+            .Builder(ctx)
+            .setTitle("Selecciona mazos")
+            .setView(scroll)
+            .setPositiveButton("Aplicar") { _, _ ->
+                updateLegend()
+                renderGrid()
+            }
+            .setNeutralButton("Todos") { _, _ ->
+                deckTree.keys.forEach { deckTree[it] = true }
+                updateLegend()
+                renderGrid()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun buildTreeUI(container: LinearLayout) {
+        container.removeAllViews()
+        val ctx = requireContext()
+        val sorted = deckTree.keys.sorted()
+        for (path in sorted) {
+            val parts = path.split("::")
+            val depth = parts.size - 1
+            val name = parts.last()
+            val hasChildren = deckTree.keys.any { it.startsWith("$path::") }
+            var ancestorCollapsed = false
+            for (i in 0 until depth) {
+                val ancestor = parts.take(i + 1).joinToString("::")
+                if (deckCollapsed[ancestor] == true) { ancestorCollapsed = true; break }
+            }
+            if (ancestorCollapsed) continue
+            val row = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+                setPadding(depth * 32, 4, 4, 4)
+            }
+            val btnToggle = TextView(ctx).apply {
+                text = if (hasChildren) { if (deckCollapsed[path] == true) "▶" else "▼" } else "  "
+                textSize = 12f
+                setTextColor(Color.parseColor("#AAAAAA"))
+                setPadding(0, 0, 8, 0)
+                if (hasChildren) {
+                    setOnClickListener {
+                        deckCollapsed[path] = deckCollapsed[path] != true
+                        buildTreeUI(container)
+                    }
+                }
+            }
+            val checkBox = CheckBox(ctx).apply {
+                text = name
+                isChecked = deckTree[path] ?: true
+                textSize = 11f
+                setTextColor(Color.WHITE)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                setOnCheckedChangeListener { _, isChecked ->
+                    deckTree[path] = isChecked
+                    val prefix = "$path::"
+                    deckTree.keys.filter { it.startsWith(prefix) }.forEach { deckTree[it] = isChecked }
+                    buildTreeUI(container)
+                }
+            }
+            row.addView(btnToggle)
+            row.addView(checkBox)
+            container.addView(row)
         }
     }
 
@@ -224,6 +339,7 @@ class ForgetCurveCalendarFragment : Fragment() {
     private fun makeEventCell(
         ctx: android.content.Context,
         entries: List<ForgetCurveScheduler.ReviewSession>?,
+        leafDecks: List<String>,
     ): LinearLayout {
         val cell = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -233,10 +349,11 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
         if (entries.isNullOrEmpty()) return cell
         for (s in entries) {
-            val color = ForgetCurveScheduler.colorForDeck(s.deckName, allDecks)
+            val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath, leafDecks)
             val minutos = (s.cardCount * 1.5).toInt()
+            val label = s.fullDeckPath.substringAfterLast("::")
             val eventView = TextView(ctx).apply {
-                text = "${s.deckName}\n${s.cardCount} tarj · ${minutos}min"
+                text = "$label\n${s.cardCount} tarj · ${minutos}min"
                 textSize = 7.5f
                 setTextColor(Color.WHITE)
                 setBackgroundColor(color)
@@ -260,27 +377,6 @@ class ForgetCurveCalendarFragment : Fragment() {
     private fun makeDividerH(ctx: android.content.Context): View = View(ctx).apply {
         setBackgroundColor(Color.parseColor("#2A2A2A"))
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
-    }
-
-    private fun showDeckFilterDialog() {
-        if (allDecks.isEmpty()) return
-        val checked = allDecks.map { it in filteredDecks }.toBooleanArray()
-        android.app.AlertDialog
-            .Builder(requireContext())
-            .setTitle("Selecciona mazos a mostrar")
-            .setMultiChoiceItems(allDecks.toTypedArray(), checked) { _, which, isChecked ->
-                if (isChecked) {
-                    filteredDecks.add(allDecks[which])
-                } else {
-                    filteredDecks.remove(allDecks[which])
-                }
-            }
-            .setPositiveButton("Aplicar") { _, _ ->
-                updateLegend()
-                renderGrid()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
     }
 
     private val Int.dp: Int

@@ -22,7 +22,7 @@ object ForgetCurveScheduler {
     data class ReviewSession(
         val dayOffset: Int,
         val hour: Int,
-        val deckName: String,
+        val fullDeckPath: String,
         val cardCount: Int,
     )
 
@@ -61,7 +61,6 @@ object ForgetCurveScheduler {
         val col = com.ichi2.anki.CollectionManager.getColUnsafe()
         val today = col.sched.today
         val map = mutableMapOf<Triple<Int, Int, String>, Int>()
-
         val cursor = col.db.query(
             "SELECT c.due - ?, d.name, COUNT(*) FROM cards c JOIN decks d ON d.id = c.did WHERE c.queue IN (2, 3) AND c.due >= ? AND c.due < ? GROUP BY c.due, d.name",
             today, today, today + windowDays,
@@ -69,14 +68,13 @@ object ForgetCurveScheduler {
         cursor.use {
             while (it.moveToNext()) {
                 val dayOffset = it.getInt(0).coerceIn(0, windowDays - 1)
-                val deckName = it.getString(1).substringAfterLast("::")
+                val fullPath = it.getString(1)
                 val count = it.getInt(2)
-                val hour = optimalHour(dayOffset, deckName)
-                val key = Triple(dayOffset, hour, deckName)
+                val hour = optimalHour(dayOffset, fullPath)
+                val key = Triple(dayOffset, hour, fullPath)
                 map[key] = (map[key] ?: 0) + count
             }
         }
-
         return map.entries.map { (k, count) ->
             ReviewSession(k.first, k.second, k.third, count)
         }.sortedWith(compareBy({ it.dayOffset }, { it.hour }))
@@ -104,6 +102,10 @@ object ForgetCurveScheduler {
         ReviewSession(5, 19, "EXPOSICIÓN", 5),
         ReviewSession(6, 19, "CICLOS ANTERIORES", 9),
         ReviewSession(6, 20, "CICLO V", 14),
+        ReviewSession(0, 9, "CICLO V::Farmacología", 10),
+        ReviewSession(0, 9, "CICLO V::Farmacología::Antibióticos", 5),
+        ReviewSession(1, 14, "CICLO V::Anatomía", 8),
+        ReviewSession(2, 14, "CICLOS ANTERIORES::Fisiología", 6),
     )
 
     fun dayLabel(offsetFromToday: Int): String {
@@ -117,8 +119,10 @@ object ForgetCurveScheduler {
         return "$dow\n$dom $mon"
     }
 
-    fun colorForDeck(deckName: String, allDecks: List<String>): Int {
-        val idx = allDecks.indexOf(deckName).coerceAtLeast(0)
+    fun colorForDeck(fullDeckPath: String, allDecks: List<String>): Int {
+        val rootDeck = fullDeckPath.substringBefore("::")
+        val rootDecks = allDecks.map { it.substringBefore("::") }.distinct().sorted()
+        val idx = rootDecks.indexOf(rootDeck).coerceAtLeast(0)
         return DECK_COLORS[idx % DECK_COLORS.size]
     }
 }
