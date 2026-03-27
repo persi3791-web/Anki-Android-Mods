@@ -122,15 +122,12 @@ class ForgetCurveCalendarFragment : Fragment() {
 
     private fun toggleFullscreen() {
         isFullscreen = !isFullscreen
-        val activity = requireActivity()
+        val window = requireActivity().window
+        val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
         if (isFullscreen) {
-            activity.window.decorView.systemUiVisibility = (
-                View.SYSTEM_UI_FLAG_FULLSCREEN or
-                    View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                )
+            controller.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
         } else {
-            activity.window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            controller.show(androidx.core.view.WindowInsetsCompat.Type.systemBars())
         }
     }
 
