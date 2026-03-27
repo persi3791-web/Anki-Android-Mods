@@ -219,7 +219,7 @@ class ForgetCurveCalendarFragment : Fragment() {
         legendRow.removeAllViews()
         val leafDecks = sessions.map { it.fullDeckPath }.distinct().sorted()
         for (deck in leafDecks) {
-            val color = ForgetCurveScheduler.colorForDeck(deck, leafDecks)
+            val color = ForgetCurveScheduler.colorForDeck(deck)
             val chip = TextView(requireContext()).apply {
                 text = "● ${deck.substringAfterLast("::")}"
                 textSize = 9f

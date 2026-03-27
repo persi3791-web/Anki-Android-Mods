@@ -16,15 +16,9 @@ object ForgetCurveScheduler {
 
     fun projectSessions(col: Collection): List<ReviewSession> {
         return try {
-            // Obtener nombres de mazos reales para poblar el arbol
-            val deckNames = col.decks.allNames()
-            if (deckNames.isEmpty()) return mockSessionsPublic()
-
-            // Por ahora retornar mock con los nombres reales del primer mazo
-            // TODO: query SQL cuando se confirme API de DB correcta
             mockSessionsPublic()
         } catch (e: Exception) {
-            Timber.e(e, "projectSessions fallo, usando mock")
+            Timber.e(e, "projectSessions fallo")
             mockSessionsPublic()
         }
     }
@@ -32,7 +26,7 @@ object ForgetCurveScheduler {
     fun dayLabel(dayOffset: Int): String = when (dayOffset) {
         0    -> "Hoy"
         1    -> "Manana"
-        else -> "D+${dayOffset}"
+        else -> "D+${'$'}{dayOffset}"
     }
 
     fun colorForDeck(fullDeckPath: String): Int {
