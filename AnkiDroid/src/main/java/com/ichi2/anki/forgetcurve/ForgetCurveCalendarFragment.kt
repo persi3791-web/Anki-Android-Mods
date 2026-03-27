@@ -242,7 +242,7 @@ class ForgetCurveCalendarFragment : Fragment() {
 
             val allPaths = mutableSetOf<String>()
             // Cargar TODOS los mazos de la colección
-            val allDeckNames = withCol { decks.allNamesAndIds().map { it.name } }
+            val allDeckNames = withCol { decks.allNamesAndIds().map { it.name }.filter { it != "Default" && it != "Predeterminado" } }
             for (name in allDeckNames) {
                 val parts = name.split("::")
                 for (i in parts.indices) {
@@ -297,7 +297,8 @@ class ForgetCurveCalendarFragment : Fragment() {
 
         val map = mutableMapOf<Pair<Int,Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
         for (s in activeSessions) {
-            map.getOrPut(Pair(s.dayOffset, s.hour)) { mutableListOf() }.add(s)
+            val relDay = s.dayOffset - weekOffset * 7
+            map.getOrPut(Pair(relDay, s.hour)) { mutableListOf() }.add(s)
         }
 
         // Cabecera días
@@ -458,7 +459,10 @@ class ForgetCurveCalendarFragment : Fragment() {
             val deckId = entries.first().deckId
             launchCatchingTask {
                 withCol { decks.select(deckId) }
-                startActivity(android.content.Intent(requireContext(), com.ichi2.anki.Reviewer::class.java))
+                val intent = android.content.Intent(requireContext(), com.ichi2.anki.DeckPicker::class.java)
+                intent.putExtra("deckId", deckId)
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+                startActivity(intent)
             }
         }
         for (s in entries) {
