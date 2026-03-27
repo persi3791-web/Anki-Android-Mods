@@ -51,9 +51,9 @@ object ForgetCurveScheduler {
     fun projectSessions(windowDays: Int = 7): List<ReviewSession> {
         return try {
             val result = projectFromAnkiDB(windowDays)
-            if (result.isEmpty()) mockSessions() else result
+            if (result.isEmpty()) mockSessionsPublic() else result
         } catch (e: Exception) {
-            mockSessions()
+            mockSessionsPublic()
         }
     }
 
