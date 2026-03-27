@@ -16,14 +16,16 @@ object ForgetCurveScheduler {
         val deckId: Long = 0L
     )
 
-    fun projectSessions(col: Collection): List<ReviewSession> {
+    fun projectSessions(col: Collection, weekOffset: Int = 0): List<ReviewSession> {
         return try {
             val crt = col.db.queryLongScalar("SELECT crt FROM col")
             val today = ((System.currentTimeMillis() / 1000L - crt) / 86400).toInt()
+            val startDay = today + weekOffset * 7
+            val endDay = startDay + 7
             val sql = "SELECT (c.due - " + today + ") AS dy, d.name, d.id, COUNT(*) " +
                 "FROM cards c JOIN decks d ON c.did = d.id " +
-                "WHERE c.queue IN (2,3) AND c.due >= " + today +
-                " AND c.due < " + (today + 7) + " GROUP BY dy, d.id"
+                "WHERE c.queue IN (2,3) AND c.due >= " + startDay +
+                " AND c.due < " + endDay + " GROUP BY dy, d.id"
             val list = mutableListOf<ReviewSession>()
             col.db.query(sql).use { cur ->
                 while (cur.moveToNext()) {
@@ -31,7 +33,7 @@ object ForgetCurveScheduler {
                         cur.getString(1), cur.getInt(3), cur.getLong(2)))
                 }
             }
-            list.ifEmpty { mockSessionsPublic() }
+            list
         } catch (e: Exception) {
             Timber.e(e, "projectSessions fallo")
             mockSessionsPublic()

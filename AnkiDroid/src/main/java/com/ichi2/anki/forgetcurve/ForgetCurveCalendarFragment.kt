@@ -56,6 +56,7 @@ class ForgetCurveCalendarFragment : Fragment() {
     private lateinit var loadingText: TextView
     private var isFullscreen = false
     private var fullscreenBtn: Button? = null
+    private var weekOffset = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -106,6 +107,50 @@ class ForgetCurveCalendarFragment : Fragment() {
         header.addView(btnFullscreen)
         rootLayout.addView(header)
 
+
+        // ── Navegación semanas ───────────────────────────────────────────────
+        val navRow = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(12, 0, 12, 4)
+        }
+        val btnPrev = Button(requireContext()).apply {
+            text = "◀"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#333333"))
+            setPadding(20, 4, 20, 4)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = 8 }
+            setOnClickListener { weekOffset--; loadAndRender() }
+        }
+        val btnNext = Button(requireContext()).apply {
+            text = "▶"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#333333"))
+            setPadding(20, 4, 20, 4)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginStart = 8 }
+            setOnClickListener { weekOffset++; loadAndRender() }
+        }
+        val btnToday = Button(requireContext()).apply {
+            text = "Hoy"
+            textSize = 10f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#1565C0"))
+            setPadding(16, 4, 16, 4)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener { weekOffset = 0; loadAndRender() }
+        }
+        navRow.addView(btnPrev)
+        navRow.addView(btnToday)
+        navRow.addView(btnNext)
+        rootLayout.addView(navRow)
         // ── Leyenda ──────────────────────────────────────────────────────────
         val legendScroll = HorizontalScrollView(requireContext()).apply {
             tag = "legendScroll"
@@ -184,10 +229,11 @@ class ForgetCurveCalendarFragment : Fragment() {
 
     // ── Carga en background ──────────────────────────────────────────────────
     private fun loadAndRender() {
+        loadingText.visibility = View.VISIBLE
         launchCatchingTask {
             // Cargar BD en hilo IO
             val loaded = withCol {
-                ForgetCurveScheduler.projectSessions(this)
+                ForgetCurveScheduler.projectSessions(this, weekOffset)
                 
             }
             // Actualizar UI en hilo principal
@@ -203,13 +249,7 @@ class ForgetCurveCalendarFragment : Fragment() {
                     allPaths.add(parts.take(i + 1).joinToString("::"))
                 }
             }
-            // También incluir mazos de sesiones
-            for (s in sessions) {
-                val parts = s.fullDeckPath.split("::")
-                for (i in parts.indices) {
-                    allPaths.add(parts.take(i + 1).joinToString("::"))
-                }
-            }
+
             for (path in allPaths) {
                 if (!deckTree.containsKey(path)) deckTree[path] = true
             }
@@ -268,7 +308,7 @@ class ForgetCurveCalendarFragment : Fragment() {
         dayHeaderRow.addView(makeLabelCell(ctx, "", HOUR_WIDTH_DP.dp, HEADER_HEIGHT_DP.dp))
         dayHeaderRow.addView(makeDividerV(ctx))
         for (d in 0 until days) {
-            dayHeaderRow.addView(makeDayHeader(ctx, d))
+            dayHeaderRow.addView(makeDayHeader(ctx, d + weekOffset * 7))
             if (d < days - 1) dayHeaderRow.addView(makeDividerV(ctx))
         }
         gridContainer.addView(dayHeaderRow)
@@ -418,11 +458,8 @@ class ForgetCurveCalendarFragment : Fragment() {
             val deckId = entries.first().deckId
             launchCatchingTask {
                 withCol { decks.select(deckId) }
+                startActivity(android.content.Intent(requireContext(), com.ichi2.anki.Reviewer::class.java))
             }
-            val intent = android.content.Intent(requireContext(), com.ichi2.anki.DeckPicker::class.java).apply {
-                flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
-            }
-            startActivity(intent)
         }
         for (s in entries) {
             val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath)
