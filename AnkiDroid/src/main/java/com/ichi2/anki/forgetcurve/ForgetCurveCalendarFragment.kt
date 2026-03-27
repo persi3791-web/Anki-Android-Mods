@@ -406,7 +406,7 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
         if (entries.isNullOrEmpty()) return cell
         for (s in entries) {
-            val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath, leafDecks)
+            val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath)
             val mins = (s.cardCount * 1.5).toInt()
             val label = s.fullDeckPath.substringAfterLast("::")
             cell.addView(TextView(ctx).apply {
