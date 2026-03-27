@@ -94,8 +94,9 @@
 
     <androidx.fragment.app.FragmentContainerView
     android:id="@+id/forget_curve_fragment_container"
+    android:layout_weight="1"
     android:layout_width="match_parent"
-    android:layout_height="180dp"/>
+    android:layout_height="0dp"/>
     </LinearLayout>
 
     <include layout="@layout/anki_progress"/>

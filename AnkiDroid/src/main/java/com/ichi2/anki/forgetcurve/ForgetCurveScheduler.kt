@@ -89,7 +89,7 @@ object ForgetCurveScheduler {
         return (base + (deckName.hashCode().and(0x7FFFFFFF) % 2)).coerceIn(0, 23)
     }
 
-    private fun mockSessions() = listOf(
+    fun mockSessionsPublic() = listOf(
         ReviewSession(0, 9, "CICLO V", 23),
         ReviewSession(0, 9, "EXPOSICIÓN", 4),
         ReviewSession(0, 10, "CICLOS ANTERIORES", 8),

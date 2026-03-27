@@ -31,12 +31,16 @@ import android.widget.TextView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ForgetCurveCalendarFragment : Fragment() {
 
     companion object {
         fun newInstance() = ForgetCurveCalendarFragment()
-        private const val COL_WIDTH_DP = 100
+        private const val COL_WIDTH_DP  = 100
         private const val HOUR_WIDTH_DP = 48
         private const val ROW_HEIGHT_DP = 56
         private const val HEADER_HEIGHT_DP = 48
@@ -47,7 +51,9 @@ class ForgetCurveCalendarFragment : Fragment() {
     private var deckCollapsed: MutableMap<String, Boolean> = mutableMapOf()
     private lateinit var gridContainer: LinearLayout
     private lateinit var rootLayout: LinearLayout
+    private lateinit var loadingText: TextView
     private var isFullscreen = false
+    private var fullscreenBtn: Button? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -59,6 +65,8 @@ class ForgetCurveCalendarFragment : Fragment() {
             setBackgroundColor(Color.parseColor("#121212"))
             setPadding(0, 8, 0, 8)
         }
+
+        // ── Header ──────────────────────────────────────────────────────────
         val header = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(12, 0, 12, 6)
@@ -90,10 +98,13 @@ class ForgetCurveCalendarFragment : Fragment() {
             setPadding(16, 4, 16, 4)
             setOnClickListener { toggleFullscreen(this) }
         }
+        fullscreenBtn = btnFullscreen
         header.addView(title)
         header.addView(btnFilter)
         header.addView(btnFullscreen)
         rootLayout.addView(header)
+
+        // ── Leyenda ──────────────────────────────────────────────────────────
         val legendScroll = HorizontalScrollView(requireContext()).apply {
             tag = "legendScroll"
             setPadding(12, 0, 12, 6)
@@ -103,6 +114,21 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
         legendScroll.addView(legendRow)
         rootLayout.addView(legendScroll)
+
+        // ── Loading ──────────────────────────────────────────────────────────
+        loadingText = TextView(requireContext()).apply {
+            text = "Cargando mazos..."
+            textSize = 11f
+            setTextColor(Color.parseColor("#AAAAAA"))
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = 16.dp }
+        }
+        rootLayout.addView(loadingText)
+
+        // ── Grid ─────────────────────────────────────────────────────────────
         val hScroll = HorizontalScrollView(requireContext())
         val vScroll = ScrollView(requireContext())
         gridContainer = LinearLayout(requireContext()).apply {
@@ -123,9 +149,11 @@ class ForgetCurveCalendarFragment : Fragment() {
         loadAndRender()
     }
 
+    // ── Pantalla completa ────────────────────────────────────────────────────
     private fun toggleFullscreen(btn: Button) {
+        val activity = activity ?: return
         isFullscreen = !isFullscreen
-        val window = requireActivity().window
+        val window = activity.window
         WindowCompat.setDecorFitsSystemWindows(window, !isFullscreen)
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         if (isFullscreen) {
@@ -139,23 +167,35 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
     }
 
+    // ── Carga en background ──────────────────────────────────────────────────
     private fun loadAndRender() {
-        sessions = ForgetCurveScheduler.projectSessions()
-        val allPaths = mutableSetOf<String>()
-        for (s in sessions) {
-            val parts = s.fullDeckPath.split("::")
-            for (i in parts.indices) {
-                allPaths.add(parts.take(i + 1).joinToString("::"))
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Cargar BD en hilo IO
+            val loaded = withContext(Dispatchers.IO) {
+                try { ForgetCurveScheduler.projectSessions() }
+                catch (e: Exception) { ForgetCurveScheduler.mockSessionsPublic() }
             }
+            // Actualizar UI en hilo principal
+            sessions = loaded
+            loadingText.visibility = View.GONE
+
+            val allPaths = mutableSetOf<String>()
+            for (s in sessions) {
+                val parts = s.fullDeckPath.split("::")
+                for (i in parts.indices) {
+                    allPaths.add(parts.take(i + 1).joinToString("::"))
+                }
+            }
+            for (path in allPaths) {
+                if (!deckTree.containsKey(path)) deckTree[path] = true
+            }
+            deckTree.keys.retainAll(allPaths)
+            updateLegend()
+            renderGrid()
         }
-        for (path in allPaths) {
-            if (!deckTree.containsKey(path)) deckTree[path] = true
-        }
-        deckTree.keys.retainAll(allPaths)
-        updateLegend()
-        renderGrid()
     }
 
+    // ── Leyenda ──────────────────────────────────────────────────────────────
     private fun updateLegend() {
         val root = view ?: return
         val legendRow = root
@@ -175,22 +215,28 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
     }
 
+    // ── Grid ─────────────────────────────────────────────────────────────────
     private fun renderGrid() {
         gridContainer.removeAllViews()
         val ctx = requireContext()
         val days = 7
         val hours = (0..23).toList()
+
         val visibleDecks = sessions
             .map { it.fullDeckPath }
             .distinct()
-            .filter { path -> isPathVisible(path) }
+            .filter { isPathVisible(it) }
             .toSet()
+
         val activeSessions = sessions.filter { it.fullDeckPath in visibleDecks }
         val leafDecks = sessions.map { it.fullDeckPath }.distinct().sorted()
-        val map = mutableMapOf<Pair<Int, Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
+
+        val map = mutableMapOf<Pair<Int,Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
         for (s in activeSessions) {
             map.getOrPut(Pair(s.dayOffset, s.hour)) { mutableListOf() }.add(s)
         }
+
+        // Cabecera días
         val dayHeaderRow = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setBackgroundColor(Color.parseColor("#1E1E1E"))
@@ -203,22 +249,23 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
         gridContainer.addView(dayHeaderRow)
         gridContainer.addView(makeDividerH(ctx))
+
+        // Filas horas
         for (h in hours) {
             val row = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 minimumHeight = ROW_HEIGHT_DP.dp
             }
             val ampm = when {
-                h == 0 -> "12\nam"
-                h < 12 -> "$h\nam"
+                h == 0  -> "12\nam"
+                h < 12  -> "$h\nam"
                 h == 12 -> "12\npm"
-                else -> "${h - 12}\npm"
+                else    -> "${h - 12}\npm"
             }
             row.addView(makeLabelCell(ctx, ampm, HOUR_WIDTH_DP.dp, ROW_HEIGHT_DP.dp))
             row.addView(makeDividerV(ctx))
             for (d in 0 until days) {
-                val entries = map[Pair(d, h)]
-                row.addView(makeEventCell(ctx, entries, leafDecks))
+                row.addView(makeEventCell(ctx, map[Pair(d, h)], leafDecks))
                 if (d < days - 1) row.addView(makeDividerV(ctx))
             }
             gridContainer.addView(row)
@@ -229,12 +276,12 @@ class ForgetCurveCalendarFragment : Fragment() {
     private fun isPathVisible(path: String): Boolean {
         val parts = path.split("::")
         for (i in parts.indices) {
-            val ancestor = parts.take(i + 1).joinToString("::")
-            if (deckTree[ancestor] == false) return false
+            if (deckTree[parts.take(i + 1).joinToString("::")] == false) return false
         }
         return true
     }
 
+    // ── Diálogo árbol mazos ───────────────────────────────────────────────────
     private fun showDeckTreeDialog() {
         if (deckTree.isEmpty()) return
         val ctx = requireContext()
@@ -245,18 +292,13 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
         scroll.addView(container)
         buildTreeUI(container)
-        android.app.AlertDialog
-            .Builder(ctx)
+        android.app.AlertDialog.Builder(ctx)
             .setTitle("Selecciona mazos")
             .setView(scroll)
-            .setPositiveButton("Aplicar") { _, _ ->
-                updateLegend()
-                renderGrid()
-            }
+            .setPositiveButton("Aplicar") { _, _ -> updateLegend(); renderGrid() }
             .setNeutralButton("Todos") { _, _ ->
                 deckTree.keys.forEach { deckTree[it] = true }
-                updateLegend()
-                renderGrid()
+                updateLegend(); renderGrid()
             }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -265,18 +307,18 @@ class ForgetCurveCalendarFragment : Fragment() {
     private fun buildTreeUI(container: LinearLayout) {
         container.removeAllViews()
         val ctx = requireContext()
-        val sorted = deckTree.keys.sorted()
-        for (path in sorted) {
+        for (path in deckTree.keys.sorted()) {
             val parts = path.split("::")
             val depth = parts.size - 1
-            val name = parts.last()
             val hasChildren = deckTree.keys.any { it.startsWith("$path::") }
             var ancestorCollapsed = false
             for (i in 0 until depth) {
-                val ancestor = parts.take(i + 1).joinToString("::")
-                if (deckCollapsed[ancestor] == true) { ancestorCollapsed = true; break }
+                if (deckCollapsed[parts.take(i + 1).joinToString("::")] == true) {
+                    ancestorCollapsed = true; break
+                }
             }
             if (ancestorCollapsed) continue
+
             val row = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
@@ -299,15 +341,14 @@ class ForgetCurveCalendarFragment : Fragment() {
                 }
             }
             val checkBox = CheckBox(ctx).apply {
-                text = name
+                text = parts.last()
                 isChecked = deckTree[path] ?: true
                 textSize = 11f
                 setTextColor(Color.WHITE)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                setOnCheckedChangeListener { _, isChecked ->
-                    deckTree[path] = isChecked
-                    val prefix = "$path::"
-                    deckTree.keys.filter { it.startsWith(prefix) }.forEach { deckTree[it] = isChecked }
+                setOnCheckedChangeListener { _, checked ->
+                    deckTree[path] = checked
+                    deckTree.keys.filter { it.startsWith("$path::") }.forEach { deckTree[it] = checked }
                     buildTreeUI(container)
                 }
             }
@@ -317,7 +358,8 @@ class ForgetCurveCalendarFragment : Fragment() {
         }
     }
 
-    private fun makeDayHeader(ctx: android.content.Context, day: Int): TextView =
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    private fun makeDayHeader(ctx: android.content.Context, day: Int) =
         TextView(ctx).apply {
             text = ForgetCurveScheduler.dayLabel(day)
             textSize = 10f
@@ -327,7 +369,7 @@ class ForgetCurveCalendarFragment : Fragment() {
             layoutParams = LinearLayout.LayoutParams(COL_WIDTH_DP.dp, HEADER_HEIGHT_DP.dp)
         }
 
-    private fun makeLabelCell(ctx: android.content.Context, text: String, w: Int, h: Int): TextView =
+    private fun makeLabelCell(ctx: android.content.Context, text: String, w: Int, h: Int) =
         TextView(ctx).apply {
             this.text = text
             textSize = 9f
@@ -350,10 +392,10 @@ class ForgetCurveCalendarFragment : Fragment() {
         if (entries.isNullOrEmpty()) return cell
         for (s in entries) {
             val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath, leafDecks)
-            val minutos = (s.cardCount * 1.5).toInt()
+            val mins = (s.cardCount * 1.5).toInt()
             val label = s.fullDeckPath.substringAfterLast("::")
-            val eventView = TextView(ctx).apply {
-                text = "$label\n${s.cardCount} tarj · ${minutos}min"
+            cell.addView(TextView(ctx).apply {
+                text = "$label\n${s.cardCount} tarj · ${mins}min"
                 textSize = 7.5f
                 setTextColor(Color.WHITE)
                 setBackgroundColor(color)
@@ -363,22 +405,20 @@ class ForgetCurveCalendarFragment : Fragment() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { bottomMargin = 2 }
-            }
-            cell.addView(eventView)
+            })
         }
         return cell
     }
 
-    private fun makeDividerV(ctx: android.content.Context): View = View(ctx).apply {
+    private fun makeDividerV(ctx: android.content.Context) = View(ctx).apply {
         setBackgroundColor(Color.parseColor("#2A2A2A"))
         layoutParams = LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.MATCH_PARENT)
     }
 
-    private fun makeDividerH(ctx: android.content.Context): View = View(ctx).apply {
+    private fun makeDividerH(ctx: android.content.Context) = View(ctx).apply {
         setBackgroundColor(Color.parseColor("#2A2A2A"))
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
     }
 
-    private val Int.dp: Int
-        get() = (this * resources.displayMetrics.density).toInt()
+    private val Int.dp get() = (this * resources.displayMetrics.density).toInt()
 }
