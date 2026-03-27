@@ -405,6 +405,14 @@ class ForgetCurveCalendarFragment : Fragment() {
             setPadding(2, 2, 2, 2)
         }
         if (entries.isNullOrEmpty()) return cell
+        cell.setOnClickListener {
+            val deckId = entries.first().deckId
+            launchCatchingTask {
+                withCol { decks.select(deckId) }
+                startActivity(android.content.Intent(
+                    requireContext(), com.ichi2.anki.Reviewer::class.java))
+            }
+        }
         for (s in entries) {
             val color = ForgetCurveScheduler.colorForDeck(s.fullDeckPath)
             val mins = (s.cardCount * 1.5).toInt()
