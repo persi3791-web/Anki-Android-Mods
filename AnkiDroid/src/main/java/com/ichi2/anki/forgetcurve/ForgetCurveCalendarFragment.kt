@@ -101,6 +101,15 @@ class ForgetCurveCalendarFragment : Fragment() {
             setPadding(16, 4, 16, 4)
             setOnClickListener { toggleFullscreen(this) }
         }
+        val btnRefresh = Button(requireContext()).apply {
+            text = "🔄"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            setBackgroundColor(Color.parseColor("#333333"))
+            setPadding(16, 4, 16, 4)
+            setOnClickListener { loadAndRender() }
+        }
+        header.addView(btnRefresh)
         fullscreenBtn = btnFullscreen
         header.addView(title)
         header.addView(btnFilter)
