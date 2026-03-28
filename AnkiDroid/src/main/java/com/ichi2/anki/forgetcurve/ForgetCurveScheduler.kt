@@ -22,10 +22,9 @@ object ForgetCurveScheduler {
             val today = ((System.currentTimeMillis() / 1000L - crt) / 86400).toInt()
             val startDay = today + weekOffset * 7
             val endDay = startDay + 7
-            val sql = "SELECT (c.due - " + today + ") AS dy, d.name, d.id, COUNT(*) " +
+            val sql = "SELECT CASE WHEN c.due < " + today + " THEN 0 ELSE (c.due - " + startDay + ") END AS dy, d.name, d.id, COUNT(*) " +
                 "FROM cards c JOIN decks d ON c.did = d.id " +
-                "WHERE c.queue IN (2,3) AND c.due >= " + startDay +
-                " AND c.due < " + endDay + " GROUP BY dy, d.id"
+                "WHERE c.queue IN (2,3) AND ((c.due < " + today + " AND " + weekOffset + " = 0) OR (c.due >= " + startDay + " AND c.due < " + endDay + ")) GROUP BY dy, d.id"
             val list = mutableListOf<ReviewSession>()
             col.db.query(sql).use { cur ->
                 while (cur.moveToNext()) {

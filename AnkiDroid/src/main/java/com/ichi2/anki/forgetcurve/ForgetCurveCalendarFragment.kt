@@ -297,7 +297,7 @@ class ForgetCurveCalendarFragment : Fragment() {
 
         val map = mutableMapOf<Pair<Int,Int>, MutableList<ForgetCurveScheduler.ReviewSession>>()
         for (s in activeSessions) {
-            val relDay = s.dayOffset - weekOffset * 7
+            val relDay = s.dayOffset
             map.getOrPut(Pair(relDay, s.hour)) { mutableListOf() }.add(s)
         }
 
