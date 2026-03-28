@@ -459,8 +459,7 @@ class ForgetCurveCalendarFragment : Fragment() {
             val deckId = entries.first().deckId
             launchCatchingTask {
                 withCol { decks.select(deckId) }
-                val intent = android.content.Intent(requireContext(), com.ichi2.anki.DeckPicker::class.java)
-                intent.putExtra("deckId", deckId)
+                val intent = android.content.Intent(requireContext(), com.ichi2.anki.Reviewer::class.java)
                 intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
                 startActivity(intent)
             }
