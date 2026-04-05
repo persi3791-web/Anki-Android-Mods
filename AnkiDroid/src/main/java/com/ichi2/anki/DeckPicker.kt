@@ -656,6 +656,18 @@ open class DeckPicker :
             replace(R.id.forget_curve_fragment_container,
                 com.ichi2.anki.forgetcurve.ForgetCurveCalendarFragment.newInstance())
         }
+
+        // Toggle botón calendario
+        val fabCalendar = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fab_calendar_toggle)
+        val calendarContainer = findViewById<androidx.fragment.app.FragmentContainerView>(R.id.forget_curve_fragment_container)
+        var calendarVisible = true
+        val colorOn = android.graphics.Color.parseColor("#FF5722")
+        val colorOff = android.graphics.Color.parseColor("#9E9E9E")
+        fabCalendar?.setOnClickListener {
+            calendarVisible = !calendarVisible
+            calendarContainer?.visibility = if (calendarVisible) android.view.View.VISIBLE else android.view.View.GONE
+            fabCalendar.backgroundTintList = android.content.res.ColorStateList.valueOf(if (calendarVisible) colorOn else colorOff)
+        }
     }
 
     override fun setupBackPressedCallbacks() {

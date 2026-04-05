@@ -99,6 +99,18 @@
     android:layout_height="0dp"/>
     </LinearLayout>
 
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_calendar_toggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_margin="16dp"
+        android:layout_marginBottom="80dp"
+        android:contentDescription="Toggle calendario"
+        app:srcCompat="@drawable/calendar_date_range"
+        app:backgroundTint="#FF5722"
+        app:tint="@android:color/white"/>
     <include layout="@layout/anki_progress"/>
     <include
         android:id="@+id/floating_action_button"
